@@ -107,14 +107,14 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
     bets : Seq[Bet[Address,Hash]]
   ) : Boolean = {
     val totalBonds = 
-      ( 0 /: cmgtState.bondedValidators )( ( acc, vbpair ) => { acc + vbpair._2 } )
+      ( 0 /: cmgtState.bondedValidators )( ( acc, vbpair ) => { acc + vbpair._2._1 } )
     val committedBonds =
       ( 0 /: bets )(
 	{
 	  ( acc, bet ) => {
 	    if ( bet.prob > .9999 ) {
 	      cmgtState.bondedValidators.get( bet.validator ) match {
-		case Some( bond ) => {
+		case Some( ( bond, unbond ) ) => {
 		  acc + bond
 		}
 		case None => {
@@ -444,6 +444,12 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
             }
           }
         }
+	case Bond( _, _, _ ) => {
+	  throw new Exception( "tbd" )
+	}
+	case Unbond( _, _, _ ) => {
+	  throw new Exception( "tbd" )
+	}
 	case FeeDistribution( prev, post ) => {
 	  val ( cmgtHash, _ ) = prev
 	  if ( hash( state ) == cmgtHash ) {

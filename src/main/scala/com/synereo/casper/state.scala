@@ -23,7 +23,7 @@ trait ConsensusManagerStateT[Address,Data,Hash,Signature] {
   def ghostTable : GhostTableT[Address,Data,Hash,Signature]
   def ghostDepth : Int  
   def history : GhostTableT[Address,Data,Hash,Signature] => Seq[TxnT[Address,Data,Hash,Signature]]  
-  def bondedValidators : Map[Address,Int]
+  def bondedValidators : Map[Address,( Int, Int )]
   def lastSeen : Map[Address,Date]
   def minimumBond : Int
   def finalityThreshold : Double
@@ -39,7 +39,7 @@ class ConsensusManagerState[Address,Data,Hash,Signature](
   override val ghostTable : GhostTableT[Address,Data,Hash,Signature],
   override val ghostDepth : Int,
   override val history : GhostTableT[Address,Data,Hash,Signature] => Seq[TxnT[Address,Data,Hash,Signature]],
-  override val bondedValidators : Map[Address,Int],
+  override val bondedValidators : Map[Address, ( Int, Int )],
   override val lastSeen : Map[Address,Date],
   override val minimumBond : Int,
   override val finalityThreshold : Double,
@@ -56,7 +56,7 @@ object ConsensusManagerState {
     ghostTable : GhostTableT[Address,Data,Hash,Signature],
     ghostDepth : Int,
     history : GhostTableT[Address,Data,Hash,Signature] => Seq[TxnT[Address,Data,Hash,Signature]],
-    bondedValidators : Map[Address,Int],
+    bondedValidators : Map[Address,( Int, Int )],
     lastSeen : Map[Address,Date],
     minimumBond : Int,
     finalityThreshold : Double,
@@ -125,7 +125,7 @@ object ConsensusManagerState {
   }
   def apply[Address,Data,Hash,Signature](
     oldState : ConsensusManagerState[Address,Data,Hash,Signature],
-    bondedValidators : Map[Address,Int]
+    bondedValidators : Map[Address, ( Int, Int )]
   ) : ConsensusManagerState[Address,Data,Hash,Signature] = {
     new ConsensusManagerState[Address,Data,Hash,Signature](
       oldState.ghostTable,
@@ -189,7 +189,7 @@ object ConsensusManagerState {
     GhostTableT[Address,Data,Hash,Signature],
     Int,
     GhostTableT[Address,Data,Hash,Signature] => Seq[TxnT[Address,Data,Hash,Signature]],
-    Map[Address,Int],
+    Map[Address,( Int, Int )],
     Map[Address,Date],
     Int,
     Double,
