@@ -16,27 +16,59 @@
 //   WBOS ::= "(" WOS ")"
 //   WBPS ::= "[" WPS "]"
 //  
-//   We interpret these as denoting successful sessions.
-// ------------------------------------------------------------------------
+//   We interpret these as denoting successful sessions. For example,
+//   to interpret HTTP we think of Player as the client and Opponent
+//   as the server; thus, "(" is taken as an outgoing HTTP GET request
+//   (i.e. the request as seen from the client code), and ")" as an
+//   incoming HTTP GET server response (i.e. the response as seen from
+//   the client code ). Then, the trace of a non-crashing HTTP client
+//   is ()()() ... (), and this trace clearly inhabits WPS.
+//
+//   Similarly, if we take "[" as the incoming HTTP GET request
+//   (i.e. the request as seen from the server code) and "]" as the
+//   outgoing HTTP GET response (i.e. the response as seen from the
+//   server code), then the trace of a non-crashing HTTP server is
+//   [][][] ... [], and this trace clearly inhabits WOS.
+//
+//   Note, however, that in HTTP the server cannot initiate a call
+//   back to a client in response to a request. This is tantamount to
+//   a mechanism for session state, and HTTP is noted for its lack of
+//   ability to properly handle session state -- a short-coming in
+//   protocol hygene that has left cookie crumbs all over the
+//   Internet.
+//
+//   In the view of protocols taken here we do get sessions, without
+//   sacrificing much of what makes HTTP attractive. Obviously, the
+//   protocol structure is simple. It takes a maximum of four lines to
+//   specify all legal traces. Yet, it's rich enough to model basic
+//   HTTP. Beyond that it provides an explicit representation of
+//   session state, while making client and server roles completely
+//   symmetric. Of equal importance, this model maps directly to
+//   models of Linear Logic. As a result, all of the tools of nearly
+//   30 years of investigation into the computational interpretation
+//   of that logic are available to allow us to reason about protocols
+//   structured in this way.
+//   ------------------------------------------------------------------------
 
 package com.biosimilarity.mdp4tw.strategies
 
 // These are the basic elements of our framework
-trait Move
-trait Opening
-trait Closing
+trait Move                                                      // any action an agent can take
+trait Opening                                                   // all actions either open a line of inquiry
+trait Closing                                                   // or close it
 
-trait Player
-trait Opponent
+trait Player                                                    // when engaging with another agent, an agent
+trait Opponent                                                  // may engage in the role of Player or Opponent
 
-trait Strategy
+trait Strategy                                                  // a plan for how to engage, which includes explicitly
+                                                                // listing all moves and responses
 
 // They combine to give us a specification of basic actions
-trait PlayerQuestionT extends Move with Opening with Player     // (
-trait OpponentAnswerT extends Move with Closing with Opponent   // )
+trait PlayerQuestionT extends Move with Opening with Player     // "("
+trait OpponentAnswerT extends Move with Closing with Opponent   // ")"
 
-trait OpponentQuestionT extends Move with Opening with Opponent // [
-trait PlayerAnswerT extends Move with Closing with Player       // ]
+trait OpponentQuestionT extends Move with Opening with Opponent // "["
+trait PlayerAnswerT extends Move with Closing with Player       // "]"
 
 // The specification of basic agents, aka a strategy, is parametric in
 // a specification of basic actions
