@@ -9,6 +9,17 @@
 package com.biosimilarity.mdp4tw.strategies
 
 object Utilities {
+  def bracketedStrategyStreamToString[Strat](
+    stratStrm : Stream[Strat]
+  ) = {
+    if ( stratStrm.hasDefiniteSize ) {
+      ( "" /: stratStrm )( _ + _ )
+    }
+    else {
+      stratStrm( 0 ).toString + " ..."
+    }
+  }
+
   def strategyStreamToString[Strat,Q,A](
     stratStrm : Stream[Strat], q : Q, a : A
   ) = {

@@ -24,12 +24,7 @@ trait PlayerStrategies[+PQ,+OA,+OQ,+PA]
     s : Stream[WellBracketedWOS[PQ,OA,OQ,PA]]
   ) extends Strategy {
     override def toString() = {
-      if ( s.hasDefiniteSize ) {
-        ( "" /: s )( _ + _ )
-      }
-      else {
-        s( 0 ).toString + " ..."
-      }
+      Utilities.bracketedStrategyStreamToString( s )
     }
   }
 }
@@ -46,12 +41,7 @@ trait OpponentStrategies[+PQ,+OA,+OQ,+PA] {
     s : Stream[WellBracketedWPS[PQ,OA,OQ,PA]]
   ) extends Strategy {
     override def toString() = {
-      if ( s.hasDefiniteSize ) {
-        ( "" /: s )( _ + _ )
-      }
-      else {
-        s( 0 ).toString + " ..."
-      }
+      Utilities.bracketedStrategyStreamToString( s )
     }
   }
 }
@@ -62,8 +52,10 @@ trait GameStrategies[+PQ,+OA,+OQ,+PA]
        extends PlayerStrategies[PQ,OA,OQ,PA]
        with OpponentStrategies[PQ,OA,OQ,PA]
 {
-  override type WOS[+PQ,+OA,+OQ,+PA] = OpponentStrategies[PQ,OA,OQ,PA]#WinningOpponentStrategy[PQ,OA,OQ,PA]
-  override type WPS[+PQ,+OA,+OQ,+PA] = PlayerStrategies[PQ,OA,OQ,PA]#WinningPlayerStrategy[PQ,OA,OQ,PA]
+  override type WOS[+PQ,+OA,+OQ,+PA] =
+    OpponentStrategies[PQ,OA,OQ,PA]#WinningOpponentStrategy[PQ,OA,OQ,PA]
+  override type WPS[+PQ,+OA,+OQ,+PA] =
+    PlayerStrategies[PQ,OA,OQ,PA]#WinningPlayerStrategy[PQ,OA,OQ,PA]
 }
 
 object ModelGameStrategies
