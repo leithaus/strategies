@@ -8,6 +8,31 @@
 
 package com.biosimilarity.mdp4tw.strategies
 
+// These are the basic elements of our framework
+trait Move
+trait Opening
+trait Closing
+
+trait Player
+trait Opponent
+
+trait Strategy
+
+// They combine to give us a specification of basic actions
+case object PlayerQuestion extends Move with Opening with Player {
+  override def toString() : String = "["
+}
+case object OpponentAnswer extends Move with Closing with Opponent {
+  override def toString() : String = "]"
+}
+
+case object OpponentQuestion extends Move with Opening with Opponent {
+  override def toString() : String = "("
+}
+case object PlayerAnswer extends Move with Closing with Player {
+  override def toString() : String = ")"
+}
+
 // The specification of basic agents, aka a strategy, is parametric in
 // a specification of basic actions
 
@@ -61,7 +86,75 @@ trait GameStrategies[+PQ,+OA,+OQ,+PA]
 object ModelGameStrategies
        extends GameStrategies[PlayerQuestion.type, OpponentAnswer.type, OpponentQuestion.type,PlayerAnswer.type]
 
+object Utilities {
+  def bracketedStrategyStreamToString[Strat](
+    stratStrm : Stream[Strat]
+  ) = {
+    if ( stratStrm.hasDefiniteSize ) {
+      stratStrm.length match {
+        case 0 => ""
+        case l => {
+          val cs = ( "" /: stratStrm.toList.take( l - 1 ) )(
+            { ( acc, e ) => e.toString + "," + acc }
+          )
+          cs + stratStrm.last.toString
+        }
+      }
+    }
+    else {
+      stratStrm( 0 ).toString + " ..."
+    }
+  }
+
+  def strategyStreamToString[Strat,Q,A](
+    stratStrm : Stream[Strat], q : Q, a : A
+  ) = {
+      val sstr = 
+        if ( stratStrm.hasDefiniteSize ) {
+          stratStrm.length match {
+            case 0 => ""
+            case l => {
+              val cs = ( "" /: stratStrm.toList.take( l - 1 ) )(
+                { ( acc, e ) => e.toString + "," + acc }
+              )
+              cs + stratStrm.last.toString
+            }
+          }
+        }
+        else {
+          "..."
+        }
+      sstr match {
+        case "" => {
+          q.toString + a.toString
+        }
+        case _ => {
+          q.toString + " " + sstr + " " + a.toString
+          //q.toString + sstr + a.toString
+        }
+      }      
+    }
+}
+
 package usage {     
+  trait FuzzyStreams {
+    def tStream[T]( seed : T )( fresh : T => T ) : Stream[T] = {
+      lazy val loopStrm : Stream[T] =
+        ( List( seed ) ).toStream append ( loopStrm map fresh );
+      loopStrm
+    }  
+    def randomIntStream( bound : Int = 2 ) : Stream[Int] = {
+      val rndm = new scala.util.Random
+      tStream[Int]( rndm.nextInt( bound ) )(
+        {
+          ( rint : Int ) => {
+            rndm.nextInt( bound )
+          }
+        }
+      )
+    }
+  }
+
   object BasicStrategies extends FuzzyStreams {
     import ModelGameStrategies._
     type TeamPlayer =
@@ -71,6 +164,17 @@ package usage {
 
     val playerZero : TeamPlayer = WinningPlayerStrategy( Nil.toStream )
     val opponentZero : TeamOpponent = WinningOpponentStrategy( Nil.toStream )
+
+    def show( tp : TeamPlayer ) : Unit = {
+      val l = tp.s.length;
+      println( tp );
+      for( wbs <- tp.s ) { show( wbs.strategy ) }
+    }
+    def show( to : TeamOpponent ) : Unit = {
+      val l = to.s.length;
+      println( to );
+      for( wbs <- to.s ) { show( wbs.strategy ) }
+    }
 
     def randomPlayerStrategy(      
       justification : Option[TeamOpponent],
