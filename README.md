@@ -7,10 +7,13 @@ A simple implementation of session-based streams
    winning player strategies.
 
    In symbols
+
    WPS ::= ( WBOS )*
+
    WOS ::= ( WBPS )*
 
    WBOS ::= "(" WOS ")"
+
    WBPS ::= "[" WPS "]"
   
    We interpret these as denoting successful sessions. For example,
