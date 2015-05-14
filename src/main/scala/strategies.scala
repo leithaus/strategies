@@ -95,7 +95,7 @@ trait OpponentStrategies[+PQ,+OA,+OQ,+PA] {
     def strategy : WPS[PQ,OA,OQ,PA]
     def oa : OA
   }
-  trait WinningOpponentStrategyT[+PQ,+OA,+OQ,+PA] {
+  trait WinningOpponentStrategyT[+PQ,+OA,+OQ,+PA] extends Strategy {
     def s : Stream[WellBracketedWPST[PQ,OA,OQ,PA]]
   }  
 }
