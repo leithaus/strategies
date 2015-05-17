@@ -49,4 +49,39 @@ with GameOps[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT] {
 	}
       }
     }
+
+  implicit def opponentAnswerF[PQ,OQ,PA]() : Functor[({type L[+OA] = WinningOpponentStrategyT[PQ,OA,OQ,PA]})#L] =
+    new Functor[({type L[+OA] = WinningOpponentStrategyT[PQ,OA,OQ,PA]})#L] {
+      def fmap[RA, TA >: RA, SA](
+        f : TA => SA
+      ) : WinningOpponentStrategyT[PQ,TA,OQ,PA] => WinningOpponentStrategyT[PQ,SA,OQ,PA] = {
+	( wos : WinningOpponentStrategyT[PQ,TA,OQ,PA] ) => {
+	  WinningOpponentStrategy[PQ,SA,OQ,PA](
+            {
+	      wos.s.map(
+                ( wbps : WellBracketedWPST[PQ,TA,OQ,PA] ) => {
+                  WellBracketedWPS[PQ,SA,OQ,PA](
+                    wbps.pq,
+                    WinningPlayerStrategy[PQ,SA,OQ,PA](
+                      wbps.strategy.s.map(
+                        {
+                          ( wbos : WellBracketedWOST[PQ,TA,OQ,PA] ) => {
+                            WellBracketedWOS[PQ,SA,OQ,PA](
+                              wbos.oq,
+                              fmap[RA,TA,SA]( f )( wbos.strategy ),
+                              wbos.pa
+                            )
+                          }
+                        }
+                      )
+                    ),
+                    f( wbps.oa )
+                  )
+                }
+              )
+            }
+	  )
+	}
+      }
+    }
 }
