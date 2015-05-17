@@ -76,7 +76,7 @@ trait PlayerAnswerT extends Move with Closing with Player       // "]"
 // Further, a Player strategy is parametric in an Opponent strategy
 trait PlayerStrategies[+PQ,+OA,+OQ,+PA]
 {
-  type WOS[+PQ,+OA,+OQ,+PA] <: OpponentStrategies[PQ,OA,OQ,PA]#WinningOpponentStrategyT[PQ,OA,OQ,PA]
+  type WOS[+PQ,+OA,+OQ,+PA]
   trait WellBracketedWOST[+PQ,+OA,+OQ,+PA] {
     def oq : OQ
     def strategy : WOS[PQ,OA,OQ,PA]
@@ -89,7 +89,7 @@ trait PlayerStrategies[+PQ,+OA,+OQ,+PA]
 
 // While an Opponent strategy is parametric in a Player strategy
 trait OpponentStrategies[+PQ,+OA,+OQ,+PA] {
-  type WPS[+PQ,+OA,+OQ,+PA] <: PlayerStrategies[PQ,OA,OQ,PA]#WinningPlayerStrategyT[PQ,OA,OQ,PA]
+  type WPS[+PQ,+OA,+OQ,+PA]
   trait WellBracketedWPST[+PQ,+OA,+OQ,+PA] {
     def pq : PQ
     def strategy : WPS[PQ,OA,OQ,PA]
@@ -106,10 +106,8 @@ trait GameStrategies[+PQ,+OA,+OQ,+PA]
        extends PlayerStrategies[PQ,OA,OQ,PA]
        with OpponentStrategies[PQ,OA,OQ,PA]
 {
-  override type WOS[+PQ,+OA,+OQ,+PA] =
-    OpponentStrategies[PQ,OA,OQ,PA]#WinningOpponentStrategyT[PQ,OA,OQ,PA]
-  override type WPS[+PQ,+OA,+OQ,+PA] =
-    PlayerStrategies[PQ,OA,OQ,PA]#WinningPlayerStrategyT[PQ,OA,OQ,PA]  
+  override type WOS[+PQ,+OA,+OQ,+PA] = WinningOpponentStrategyT[PQ,OA,OQ,PA]
+  override type WPS[+PQ,+OA,+OQ,+PA] = WinningPlayerStrategyT[PQ,OA,OQ,PA]  
   
   case class WellBracketedWOS[+PQ,+OA,+OQ,+PA](
     override val oq : OQ, override val strategy : WOS[PQ,OA,OQ,PA], override val pa : PA
@@ -139,6 +137,21 @@ trait GameStrategies[+PQ,+OA,+OQ,+PA]
       Utilities.bracketedStrategyStreamToString( s )
     }
   }
+
+  def show[PQ1 >: PQ,OA1 >: OA,OQ1 >: OQ, PA1 >: PA](
+    tp : WinningPlayerStrategyT[PQ1,OA1,OQ1,PA1]
+  ) : Unit = {
+    val l = tp.s.length;
+    println( tp );
+    for( wbs <- tp.s ) { show( wbs.strategy ) }
+  }
+  def show[PQ1 >: PQ,OA1 >: OA,OQ1 >: OQ, PA1 >: PA](
+    to : WinningOpponentStrategyT[PQ1,OA1,OQ1,PA1]
+  ) : Unit = {
+    val l = to.s.length;
+    println( to );
+    for( wbs <- to.s ) { show( wbs.strategy ) }
+  }  
 }
 
 

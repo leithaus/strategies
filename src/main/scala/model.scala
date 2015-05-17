@@ -69,17 +69,6 @@ package usage {
     val playerZero : TeamPlayer = WinningPlayerStrategy( Nil.toStream )
     val opponentZero : TeamOpponent = WinningOpponentStrategy( Nil.toStream )
 
-    def show( tp : TeamPlayer ) : Unit = {
-      val l = tp.s.length;
-      println( tp );
-      for( wbs <- tp.s ) { show( wbs.strategy ) }
-    }
-    def show( to : TeamOpponent ) : Unit = {
-      val l = to.s.length;
-      println( to );
-      for( wbs <- to.s ) { show( wbs.strategy ) }
-    }
-
     def randomPlayerStrategy(      
       justification : Option[TeamOpponent],
       depth : Int,
