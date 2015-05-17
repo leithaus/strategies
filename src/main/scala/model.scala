@@ -21,6 +21,19 @@ case object PlayerAnswer extends PlayerAnswerT {
   override def toString() : String = ")"
 }
 
+case object BlackOpen extends PlayerQuestionT {
+  override def toString() : String = "{B|"
+}
+case object BlackClose extends OpponentAnswerT {
+  override def toString() : String = "|B}"
+}  
+case object RedOpen extends OpponentQuestionT {
+  override def toString() : String = "{R|"
+}
+case object RedClose extends PlayerAnswerT {
+  override def toString() : String = "|R}"
+}
+
 object ModelGameStrategies
 extends GameStrategies[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]
 with GameOps[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]
@@ -238,9 +251,9 @@ package usage {
                       case 0 => {
                         Left(
                           WellBracketedBS(
-                            OpponentQuestion,
+                            RedOpen,
                             randomBlackSet( None, depth + 1, maxd, maxb, rndm ),
-                            PlayerAnswer
+                            RedClose
                           )
                         )
                       }
@@ -271,7 +284,7 @@ package usage {
               RSet(
                 List(
                   Left(
-                    WellBracketedBS( OpponentQuestion, blackZero, PlayerAnswer )
+                    WellBracketedBS( RedOpen, blackZero, RedClose )
                   )
                 ).toStream
               )
@@ -286,7 +299,7 @@ package usage {
                   RSet(
                     List(
                       Left(
-                        WellBracketedBS( OpponentQuestion, wos, PlayerAnswer )
+                        WellBracketedBS( RedOpen, wos, RedClose )
                       )
                     ).toStream
                   )
@@ -301,7 +314,7 @@ package usage {
           RSet(
             List(
               Left(
-                WellBracketedBS( OpponentQuestion, wos, PlayerAnswer )
+                WellBracketedBS( RedOpen, wos, RedClose )
               )
             ).toStream
           )
@@ -333,9 +346,9 @@ package usage {
                       case 0 => {
                         Left(
                           WellBracketedRS(
-                            PlayerQuestion,
+                            BlackOpen,
                             randomRedSet( None, depth + 1, maxd, maxb, rndm ),
-                            OpponentAnswer
+                            BlackClose
                           )
                         )
                       }
@@ -357,7 +370,7 @@ package usage {
               BSet(
                 List(
                   Left(
-                    WellBracketedRS( PlayerQuestion, redZero, OpponentAnswer )
+                    WellBracketedRS( BlackOpen, redZero, BlackClose )
                   )
                 ).toStream
               )
@@ -375,7 +388,7 @@ package usage {
                   BSet(
                     List(
                       Left(
-                        WellBracketedRS( PlayerQuestion, wps, OpponentAnswer )
+                        WellBracketedRS( BlackOpen, wps, BlackClose )
                       )
                     ).toStream
                   )
@@ -390,7 +403,7 @@ package usage {
           BSet(
             List(
               Left(
-                WellBracketedRS( PlayerQuestion, wps, OpponentAnswer )
+                WellBracketedRS( BlackOpen, wps, BlackClose )
               )
             ).toStream
           )
