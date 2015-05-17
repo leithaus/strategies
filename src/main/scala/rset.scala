@@ -4,7 +4,9 @@
 // Creation:    Sun May 10 03:29:13 2015 
 // Copyright:   Not supplied 
 // Description: 
-//   ------------------------------------------------------------------------
+//  The difference between Strategies and RBSets is that RBSets can
+//  nest, whereas Strategies are strictly alternating.
+// ------------------------------------------------------------------------
 
 package com.biosimilarity.mdp4tw.strategies
 

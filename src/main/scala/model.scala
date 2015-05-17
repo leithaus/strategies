@@ -8,24 +8,23 @@
 
 package com.biosimilarity.mdp4tw.strategies
 
-object ModelGameStrategies
-       extends GameStrategies[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]
-       with GameOps[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]
-{
-  case object PlayerQuestion extends PlayerQuestionT {
-    override def toString() : String = "["
-  }
-  case object OpponentAnswer extends OpponentAnswerT {
-    override def toString() : String = "]"
-  }
-  
-  case object OpponentQuestion extends OpponentQuestionT {
-    override def toString() : String = "("
-  }
-  case object PlayerAnswer extends PlayerAnswerT {
-    override def toString() : String = ")"
-  }
+case object PlayerQuestion extends PlayerQuestionT {
+  override def toString() : String = "["
+}
+case object OpponentAnswer extends OpponentAnswerT {
+  override def toString() : String = "]"
+}  
+case object OpponentQuestion extends OpponentQuestionT {
+  override def toString() : String = "("
+}
+case object PlayerAnswer extends PlayerAnswerT {
+  override def toString() : String = ")"
+}
 
+object ModelGameStrategies
+extends GameStrategies[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]
+with GameOps[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]
+{
   override def negatePQ[Q >: PlayerQuestionT]( pq : Q ) : OpponentQuestionT = {
     OpponentQuestion
   }
@@ -38,6 +37,11 @@ object ModelGameStrategies
   override def negateOA[A >: OpponentAnswerT]( oa : A ) : PlayerAnswerT = {
     PlayerAnswer
   }
+}
+
+object ModelRBSets
+extends RBSets[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]
+{
 }
 
 package usage {     
@@ -200,6 +204,195 @@ package usage {
         case ( Some( wps ), false ) => {
           WinningOpponentStrategy(
             List( WellBracketedWPS( PlayerQuestion, wps, OpponentAnswer ) ).toStream
+          )
+        }
+      }      
+    }
+  }
+  
+  object BasicSets extends FuzzyStreams {
+    import ModelRBSets._
+    type TeamRed =
+      RS[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]
+    type TeamBlack =
+      BS[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]
+
+    val redZero : TeamRed = RSet( Nil.toStream )
+    val blackZero : TeamBlack = BSet( Nil.toStream )
+
+    def randomRedSet(      
+      justification : Option[TeamBlack],
+      depth : Int,
+      maxd : Int,
+      maxb : Int,
+      rndm : scala.util.Random = new scala.util.Random
+    ) : TeamRed = {
+      ( justification, ( depth < maxd ) ) match {
+        case ( None, true ) => {       
+          rndm.nextInt( 2 ) match {
+            case 0 => {
+              RSet(
+                ( 1 to rndm.nextInt( maxb ) ).map(
+                  ( i ) => {
+                    rndm.nextInt( 2 ) match {
+                      case 0 => {
+                        Left(
+                          WellBracketedBS(
+                            OpponentQuestion,
+                            randomBlackSet( None, depth + 1, maxd, maxb, rndm ),
+                            PlayerAnswer
+                          )
+                        )
+                      }
+                      case 1 => {
+                        Right(
+                          randomRedSet( None, depth + 1, maxd, maxb, rndm )
+                        )
+                      }
+                    }                    
+                  }
+                ).toStream
+              )
+            }
+            case 1 => {              
+              randomRedSet(
+                Some( randomBlackSet( None, depth + 1, maxd, maxb, rndm ) ),
+                depth + 1, maxd, maxb, rndm 
+              )
+            }
+          }
+        }
+        case ( None, false ) => {       
+          rndm.nextInt( 2 ) match {
+            case 0 => {
+              redZero
+            }
+            case 1 => {
+              RSet(
+                List(
+                  Left(
+                    WellBracketedBS( OpponentQuestion, blackZero, PlayerAnswer )
+                  )
+                ).toStream
+              )
+            }
+          }
+        }
+        case ( Some( wos ), true ) =>  {          
+          randomRedSet(
+            Some(
+              randomBlackSet(
+                Some(
+                  RSet(
+                    List(
+                      Left(
+                        WellBracketedBS( OpponentQuestion, wos, PlayerAnswer )
+                      )
+                    ).toStream
+                  )
+                ),
+                depth + 1, maxd, maxb, rndm
+              )
+            ),
+            depth + 1, maxd, maxb, rndm
+          )
+        }
+        case ( Some( wos ), false ) => {
+          RSet(
+            List(
+              Left(
+                WellBracketedBS( OpponentQuestion, wos, PlayerAnswer )
+              )
+            ).toStream
+          )
+        }
+      }      
+    }
+    
+    def randomBlackSet(      
+      justification : Option[TeamRed],
+      depth : Int,
+      maxd : Int,
+      maxb : Int,
+      rndm : scala.util.Random = new scala.util.Random
+    ) : TeamBlack = {
+      ( justification, ( depth < maxd ) ) match {
+        case ( None, true ) => {       
+          rndm.nextInt( 2 ) match {
+            case 0 => {
+              randomBlackSet(
+                Some( randomRedSet( None, depth + 1, maxd, maxb, rndm ) ),
+                depth + 1, maxd, maxb, rndm 
+              )
+            }
+            case 1 => {
+              BSet(
+                ( 1 to rndm.nextInt( maxb ) ).map(
+                  ( i ) => {
+                    rndm.nextInt( 2 ) match {
+                      case 0 => {
+                        Left(
+                          WellBracketedRS(
+                            PlayerQuestion,
+                            randomRedSet( None, depth + 1, maxd, maxb, rndm ),
+                            OpponentAnswer
+                          )
+                        )
+                      }
+                      case 1 => {
+                        Right(
+                          randomBlackSet( None, depth + 1, maxd, maxb, rndm )
+                        )
+                      }
+                    }                    
+                  }
+                ).toStream
+              )
+            }
+          }
+        }
+        case ( None, false ) => {       
+          rndm.nextInt( 2 ) match {
+            case 0 => {
+              BSet(
+                List(
+                  Left(
+                    WellBracketedRS( PlayerQuestion, redZero, OpponentAnswer )
+                  )
+                ).toStream
+              )
+            }
+            case 1 => {
+              blackZero
+            }
+          }
+        }
+        case ( Some( wps ), true ) =>  {          
+          randomBlackSet(
+            Some(
+              randomRedSet(
+                Some(
+                  BSet(
+                    List(
+                      Left(
+                        WellBracketedRS( PlayerQuestion, wps, OpponentAnswer )
+                      )
+                    ).toStream
+                  )
+                ),
+                depth + 1, maxd, maxb, rndm
+              )
+            ),
+            depth + 1, maxd, maxb, rndm
+          )
+        }
+        case ( Some( wps ), false ) => {
+          BSet(
+            List(
+              Left(
+                WellBracketedRS( PlayerQuestion, wps, OpponentAnswer )
+              )
+            ).toStream
           )
         }
       }      
