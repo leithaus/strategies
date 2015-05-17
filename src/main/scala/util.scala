@@ -28,6 +28,25 @@ object Utilities {
     }
   }
 
+  def bracketedSetStreamToString[Strat](
+    setStrm : Stream[Strat]
+  ) = {
+    if ( setStrm.hasDefiniteSize ) {
+      setStrm.length match {
+        case 0 => ""
+        case l => {
+          val cs = ( "" /: setStrm.toList.take( l - 1 ) )(
+            { ( acc, e ) => e.toString + "," + acc }
+          )
+          cs + setStrm.last.toString
+        }
+      }
+    }
+    else {
+      setStrm( 0 ).toString + " ..."
+    }
+  }
+
   def strategyStreamToString[Strat,Q,A](
     stratStrm : Stream[Strat], q : Q, a : A
   ) = {
@@ -40,6 +59,35 @@ object Utilities {
                 { ( acc, e ) => e.toString + "," + acc }
               )
               cs + stratStrm.last.toString
+            }
+          }
+        }
+        else {
+          "..."
+        }
+      sstr match {
+        case "" => {
+          q.toString + a.toString
+        }
+        case _ => {
+          q.toString + " " + sstr + " " + a.toString
+          //q.toString + sstr + a.toString
+        }
+      }      
+    }
+
+  def setStreamToString[Strat,Q,A](
+    setStrm : Stream[Strat], q : Q, a : A
+  ) = {
+      val sstr = 
+        if ( setStrm.hasDefiniteSize ) {
+          setStrm.length match {
+            case 0 => ""
+            case l => {
+              val cs = ( "" /: setStrm.toList.take( l - 1 ) )(
+                { ( acc, e ) => e.toString + "," + acc }
+              )
+              cs + setStrm.last.toString
             }
           }
         }
