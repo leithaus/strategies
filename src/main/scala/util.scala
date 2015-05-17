@@ -36,9 +36,23 @@ object Utilities {
         case 0 => ""
         case l => {
           val cs = ( "" /: setStrm.toList.take( l - 1 ) )(
-            { ( acc, e ) => e.toString + "," + acc }
+            {
+              ( acc, e ) => {
+                val s =
+                  e match {
+                    case Left( wbs ) => wbs
+                    case Right( ns ) => ns
+                  }
+                s.toString + "," + acc
+              }
+            }
           )
-          cs + setStrm.last.toString
+          val lst = 
+            setStrm.last match {
+              case Left( wbs ) => wbs
+              case Right( ns ) => ns
+            }
+          cs + lst.toString
         }
       }
     }
@@ -85,9 +99,23 @@ object Utilities {
             case 0 => ""
             case l => {
               val cs = ( "" /: setStrm.toList.take( l - 1 ) )(
-                { ( acc, e ) => e.toString + "," + acc }
+                {
+                  ( acc, e ) => {
+                    val s =
+                      e match {
+                        case Left( wbs ) => wbs
+                        case Right( ns ) => ns
+                      }
+                    s.toString + "," + acc
+                  }
+                }
               )
-              cs + setStrm.last.toString
+              val lst = 
+                setStrm.last match {
+                  case Left( wbs ) => wbs
+                  case Right( ns ) => ns
+                }
+              cs + lst.toString
             }
           }
         }
