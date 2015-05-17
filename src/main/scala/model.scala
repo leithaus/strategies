@@ -58,10 +58,11 @@ extends RBSets[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]
 }
 
 package usage {     
-  trait FuzzyStreams {
+  import Utilities.stream
+  trait FuzzyStreams {    
     def tStream[T]( seed : T )( fresh : T => T ) : Stream[T] = {
       lazy val loopStrm : Stream[T] =
-        ( List( seed ) ).toStream append ( loopStrm map fresh );
+        stream( seed ) append ( loopStrm map fresh );
       loopStrm
     }  
     def randomIntStream( bound : Int = 2 ) : Stream[Int] = {
@@ -124,9 +125,9 @@ package usage {
             }
             case 1 => {
               WinningPlayerStrategy(
-                List(
+                stream(
                   WellBracketedWOS( OpponentQuestion, opponentZero, PlayerAnswer )
-                ).toStream
+                )
               )
             }
           }
@@ -137,7 +138,7 @@ package usage {
               randomOpponentStrategy(
                 Some(
                   WinningPlayerStrategy(
-                    List( WellBracketedWOS( OpponentQuestion, wos, PlayerAnswer ) ).toStream
+                    stream( WellBracketedWOS( OpponentQuestion, wos, PlayerAnswer ) )
                   )
                 ),
                 depth + 1, maxd, maxb, rndm
@@ -148,7 +149,7 @@ package usage {
         }
         case ( Some( wos ), false ) => {
           WinningPlayerStrategy(
-            List( WellBracketedWOS( OpponentQuestion, wos, PlayerAnswer ) ).toStream
+            stream( WellBracketedWOS( OpponentQuestion, wos, PlayerAnswer ) )
           )
         }
       }      
@@ -189,9 +190,9 @@ package usage {
           rndm.nextInt( 2 ) match {
             case 0 => {
               WinningOpponentStrategy(
-                List(
+                stream(
                   WellBracketedWPS( PlayerQuestion, playerZero, OpponentAnswer )
-                ).toStream
+                )
               )
             }
             case 1 => {
@@ -205,7 +206,7 @@ package usage {
               randomPlayerStrategy(
                 Some(
                   WinningOpponentStrategy(
-                    List( WellBracketedWPS( PlayerQuestion, wps, OpponentAnswer ) ).toStream
+                    stream( WellBracketedWPS( PlayerQuestion, wps, OpponentAnswer ) )
                   )
                 ),
                 depth + 1, maxd, maxb, rndm
@@ -216,7 +217,7 @@ package usage {
         }
         case ( Some( wps ), false ) => {
           WinningOpponentStrategy(
-            List( WellBracketedWPS( PlayerQuestion, wps, OpponentAnswer ) ).toStream
+            stream( WellBracketedWPS( PlayerQuestion, wps, OpponentAnswer ) )
           )
         }
       }      
@@ -226,12 +227,12 @@ package usage {
   object BasicSets extends FuzzyStreams {
     import ModelRBSets._
     type TeamRed =
-      RS[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]
+      RA[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]
     type TeamBlack =
-      BS[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]
+      BA[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]
 
-    val redZero : TeamRed = RSet( Nil.toStream )
-    val blackZero : TeamBlack = BSet( Nil.toStream )
+    val redZero : TeamRed = RSet( RedOpen, Nil.toStream, RedClose )
+    val blackZero : TeamBlack = BSet( BlackOpen, Nil.toStream, BlackClose )
 
     def randomRedSet(      
       justification : Option[TeamBlack],
@@ -241,39 +242,23 @@ package usage {
       rndm : scala.util.Random = new scala.util.Random
     ) : TeamRed = {
       ( justification, ( depth < maxd ) ) match {
-        case ( None, true ) => {       
-          rndm.nextInt( 2 ) match {
-            case 0 => {
-              RSet(
-                ( 1 to rndm.nextInt( maxb ) ).map(
-                  ( i ) => {
-                    rndm.nextInt( 2 ) match {
-                      case 0 => {
-                        Left(
-                          WellBracketedBS(
-                            RedOpen,
-                            randomBlackSet( None, depth + 1, maxd, maxb, rndm ),
-                            RedClose
-                          )
-                        )
-                      }
-                      case 1 => {
-                        Right(
-                          randomRedSet( None, depth + 1, maxd, maxb, rndm )
-                        )
-                      }
-                    }                    
+        case ( None, true ) => {
+          RSet(
+            RedOpen,
+            ( 1 to rndm.nextInt( maxb ) ).map(
+              ( i ) => {
+                rndm.nextInt( 2 ) match {
+                  case 0 => {
+                    Left( randomBlackSet( None, depth + 1, maxd, maxb, rndm ) )
                   }
-                ).toStream
-              )
-            }
-            case 1 => {              
-              randomRedSet(
-                Some( randomBlackSet( None, depth + 1, maxd, maxb, rndm ) ),
-                depth + 1, maxd, maxb, rndm 
-              )
-            }
-          }
+                  case 1 => {
+                    Right( randomRedSet( None, depth + 1, maxd, maxb, rndm ) )
+                  }
+                }                    
+              }
+            ).toStream,
+            RedClose
+          )
         }
         case ( None, false ) => {       
           rndm.nextInt( 2 ) match {
@@ -281,13 +266,7 @@ package usage {
               redZero
             }
             case 1 => {
-              RSet(
-                List(
-                  Left(
-                    WellBracketedBS( RedOpen, blackZero, RedClose )
-                  )
-                ).toStream
-              )
+              RSet( RedOpen, stream( Left( blackZero ) ), RedClose )
             }
           }
         }
@@ -296,13 +275,7 @@ package usage {
             Some(
               randomBlackSet(
                 Some(
-                  RSet(
-                    List(
-                      Left(
-                        WellBracketedBS( RedOpen, wos, RedClose )
-                      )
-                    ).toStream
-                  )
+                  RSet( RedOpen, stream( Left( wos ) ), RedClose )
                 ),
                 depth + 1, maxd, maxb, rndm
               )
@@ -311,13 +284,7 @@ package usage {
           )
         }
         case ( Some( wos ), false ) => {
-          RSet(
-            List(
-              Left(
-                WellBracketedBS( RedOpen, wos, RedClose )
-              )
-            ).toStream
-          )
+          RSet( RedOpen, stream( Left( wos ) ), RedClose )
         }
       }      
     }
@@ -331,49 +298,27 @@ package usage {
     ) : TeamBlack = {
       ( justification, ( depth < maxd ) ) match {
         case ( None, true ) => {       
-          rndm.nextInt( 2 ) match {
-            case 0 => {
-              randomBlackSet(
-                Some( randomRedSet( None, depth + 1, maxd, maxb, rndm ) ),
-                depth + 1, maxd, maxb, rndm 
-              )
-            }
-            case 1 => {
-              BSet(
-                ( 1 to rndm.nextInt( maxb ) ).map(
-                  ( i ) => {
-                    rndm.nextInt( 2 ) match {
-                      case 0 => {
-                        Left(
-                          WellBracketedRS(
-                            BlackOpen,
-                            randomRedSet( None, depth + 1, maxd, maxb, rndm ),
-                            BlackClose
-                          )
-                        )
-                      }
-                      case 1 => {
-                        Right(
-                          randomBlackSet( None, depth + 1, maxd, maxb, rndm )
-                        )
-                      }
-                    }                    
+          BSet(
+            BlackOpen,
+            ( 1 to rndm.nextInt( maxb ) ).map(
+              ( i ) => {
+                rndm.nextInt( 2 ) match {
+                  case 0 => {
+                    Left( randomRedSet( None, depth + 1, maxd, maxb, rndm ) )
                   }
-                ).toStream
-              )
-            }
-          }
+                  case 1 => {
+                    Right( randomBlackSet( None, depth + 1, maxd, maxb, rndm ) )
+                  }
+                }                    
+              }
+            ).toStream,
+            BlackClose
+          )
         }
         case ( None, false ) => {       
           rndm.nextInt( 2 ) match {
             case 0 => {
-              BSet(
-                List(
-                  Left(
-                    WellBracketedRS( BlackOpen, redZero, BlackClose )
-                  )
-                ).toStream
-              )
+              BSet( BlackOpen, stream( Left( redZero ) ), BlackClose )
             }
             case 1 => {
               blackZero
@@ -384,15 +329,7 @@ package usage {
           randomBlackSet(
             Some(
               randomRedSet(
-                Some(
-                  BSet(
-                    List(
-                      Left(
-                        WellBracketedRS( BlackOpen, wps, BlackClose )
-                      )
-                    ).toStream
-                  )
-                ),
+                Some( BSet( BlackOpen, stream( Left( wps ) ), BlackClose ) ),
                 depth + 1, maxd, maxb, rndm
               )
             ),
@@ -400,13 +337,7 @@ package usage {
           )
         }
         case ( Some( wps ), false ) => {
-          BSet(
-            List(
-              Left(
-                WellBracketedRS( BlackOpen, wps, BlackClose )
-              )
-            ).toStream
-          )
+          BSet( BlackOpen, stream( Left( wps ) ), BlackClose )
         }
       }      
     }

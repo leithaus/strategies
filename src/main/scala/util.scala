@@ -9,6 +9,7 @@
 package com.biosimilarity.mdp4tw.strategies
 
 object Utilities {
+  def stream[Elem]( e : Elem ) = List( e ).toStream
   def bracketedStrategyStreamToString[Strat](
     stratStrm : Stream[Strat]
   ) = {
@@ -79,16 +80,16 @@ object Utilities {
         else {
           "..."
         }
-      sstr match {
-        case "" => {
-          q.toString + a.toString
-        }
-        case _ => {
-          q.toString + " " + sstr + " " + a.toString
-          //q.toString + sstr + a.toString
-        }
-      }      
-    }
+    sstr match {
+      case "" => {
+        q.toString + a.toString
+      }
+      case _ => {
+        q.toString + " " + sstr + " " + a.toString
+        //q.toString + sstr + a.toString
+      }
+    }      
+  }
 
   def setStreamToString[Strat,Q,A](
     setStrm : Stream[Strat], q : Q, a : A

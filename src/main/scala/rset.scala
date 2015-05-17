@@ -4,80 +4,65 @@
 // Creation:    Sun May 10 03:29:13 2015 
 // Copyright:   Not supplied 
 // Description: 
-//  The difference between Strategies and RBSets is that RBSets can
-//  nest, whereas Strategies are strictly alternating.
+//  The differences between Strategies and RBSets are that
+//  1. RBSets can nest, whereas Strategies are strictly alternating;
+//  2. RBSets are "rooted": the extension stream is always wrapped by brackets.
 // ------------------------------------------------------------------------
 
 package com.biosimilarity.mdp4tw.strategies
 
 trait RSets[+PQ,+OA,+OQ,+PA]
 {
-  type BS[+PQ,+OA,+OQ,+PA]
-  trait WellBracketedBST[+PQ,+OA,+OQ,+PA] {
-    def oq : OQ
-    def set : BS[PQ,OA,OQ,PA]
-    def pa : PA
-  }
+  type BA[+PQ,+OA,+OQ,+PA]  
   trait RSetT[+PQ,+OA,+OQ,+PA] extends Strategy {
-    def s : Stream[Either[WellBracketedBST[PQ,OA,OQ,PA],RSetT[PQ,OA,OQ,PA]]]
+    def oq : OQ
+    def s : Stream[Either[BA[PQ,OA,OQ,PA],RSetT[PQ,OA,OQ,PA]]]
+    def pa : PA
   }  
 }
 
 trait BSets[+PQ,+OA,+OQ,+PA] {
-  type RS[+PQ,+OA,+OQ,+PA]
-  trait WellBracketedRST[+PQ,+OA,+OQ,+PA] {
-    def pq : PQ
-    def set : RS[PQ,OA,OQ,PA]
-    def oa : OA
-  }
+  type RA[+PQ,+OA,+OQ,+PA]  
   trait BSetT[+PQ,+OA,+OQ,+PA] extends Strategy {
-    def s : Stream[Either[WellBracketedRST[PQ,OA,OQ,PA],BSetT[PQ,OA,OQ,PA]]]
+    def pq : PQ
+    def s : Stream[Either[RA[PQ,OA,OQ,PA],BSetT[PQ,OA,OQ,PA]]]
+    def oa : OA
   }  
 }
 
 trait RBSets[+PQ,+OA,+OQ,+PA] extends RSets[PQ,OA,OQ,PA] with BSets[PQ,OA,OQ,PA]
 {
-  override type BS[+PQ,+OA,+OQ,+PA] = BSetT[PQ,OA,OQ,PA]
-  override type RS[+PQ,+OA,+OQ,+PA] = RSetT[PQ,OA,OQ,PA]  
-  
-  case class WellBracketedBS[+PQ,+OA,+OQ,+PA](
-    override val oq : OQ, override val set : BS[PQ,OA,OQ,PA], override val pa : PA
-  ) extends WellBracketedBST[PQ,OA,OQ,PA] {
-    override def toString() = {
-      Utilities.setStreamToString( set.s, oq, pa )            
-    }
-  }
+  override type BA[+PQ,+OA,+OQ,+PA] = BSetT[PQ,OA,OQ,PA]
+  override type RA[+PQ,+OA,+OQ,+PA] = RSetT[PQ,OA,OQ,PA]  
+
   case class RSet[+PQ,+OA,+OQ,+PA](
-    override val s : Stream[Either[WellBracketedBST[PQ,OA,OQ,PA],RSetT[PQ,OA,OQ,PA]]]
+    override val oq : OQ,
+    override val s : Stream[Either[BA[PQ,OA,OQ,PA],RSetT[PQ,OA,OQ,PA]]],
+    override val pa : PA
   ) extends RSetT[PQ,OA,OQ,PA] {
     override def toString() = {
-      Utilities.bracketedSetStreamToString( s )
-    }
-  }
-  case class WellBracketedRS[+PQ,+OA,+OQ,+PA](
-    override val pq : PQ, override val set : RS[PQ,OA,OQ,PA], override val oa : OA
-  ) extends WellBracketedRST[PQ,OA,OQ,PA] {
-    override def toString() = {
-      Utilities.setStreamToString( set.s, pq, oa )                  
+      Utilities.setStreamToString( s, oq, pa )
     }
   }
   case class BSet[+PQ,+OA,+OQ,+PA](
-    override val s : Stream[Either[WellBracketedRST[PQ,OA,OQ,PA],BSetT[PQ,OA,OQ,PA]]]
+    override val pq : PQ,
+    override val s : Stream[Either[RA[PQ,OA,OQ,PA],BSetT[PQ,OA,OQ,PA]]],
+    override val oa : OA
   ) extends BSetT[PQ,OA,OQ,PA] {
     override def toString() = {
-      Utilities.bracketedSetStreamToString( s )
+      Utilities.setStreamToString( s, pq, oa )
     }
   }
 
   def show[PQ1 >: PQ,OA1 >: OA,OQ1 >: OQ, PA1 >: PA](
-    tp : RSetT[PQ1,OA1,OQ1,PA1]
+    rset : RSetT[PQ1,OA1,OQ1,PA1]
   ) : Unit = {
-    val l = tp.s.length;
-    println( tp );
-    for( wbs <- tp.s ) {
+    val l = rset.s.length;
+    println( rset );
+    for( wbs <- rset.s ) {
       wbs match {
         case Left( atom ) => {
-          show( atom.set )
+          show( atom )
         }
         case Right( set ) => {
           show( set )
@@ -86,14 +71,14 @@ trait RBSets[+PQ,+OA,+OQ,+PA] extends RSets[PQ,OA,OQ,PA] with BSets[PQ,OA,OQ,PA]
     }
   }
   def show[PQ1 >: PQ,OA1 >: OA,OQ1 >: OQ, PA1 >: PA](
-    to : BSetT[PQ1,OA1,OQ1,PA1]
+    bset : BSetT[PQ1,OA1,OQ1,PA1]
   ) : Unit = {
-    val l = to.s.length;
-    println( to );
-    for( wbs <- to.s ) {
+    val l = bset.s.length;
+    println( bset );
+    for( wbs <- bset.s ) {
       wbs match {
         case Left( atom ) => {
-          show( atom.set )
+          show( atom )
         }
         case Right( set ) => {
           show( set )
