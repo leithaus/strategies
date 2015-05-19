@@ -1,0 +1,1 @@
+YUI.add("terminal-input",function(e,t){"use strict";e.TerminalInput=e.Base.create("terminal-input",e.Terminal,[],{getClassName:function(e){return"yui3-terminal-"+e}},{ATTRS:{dir:{value:[-0.3,0]},ddGroupsDrag:{value:["input"]},ddGroupsDrop:{value:["output"]}}})},"@VERSION@",{requires:["terminal"]});

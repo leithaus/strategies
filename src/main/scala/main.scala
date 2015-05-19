@@ -10,5 +10,6 @@ class Main extends Router {
 
   get("/test") = "I'm fine, thanks!"
   get("/") = ftl("index.ftl")
+  get("/skein") = redirect("index.html")
 
 }

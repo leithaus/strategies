@@ -1,0 +1,8 @@
+{
+   "terminal-scissors": {
+      "requires": [
+         "overlay"
+      ],
+      "skinnable": true
+   }
+}

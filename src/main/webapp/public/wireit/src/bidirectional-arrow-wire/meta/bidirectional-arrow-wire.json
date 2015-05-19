@@ -1,0 +1,7 @@
+{
+   "bidirectional-arrow-wire": {
+      "requires": [
+         "arrow-wire"
+      ]
+   }
+}
