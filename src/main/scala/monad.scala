@@ -85,3 +85,53 @@ with GameOps[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT] {
       }
     }
 }
+
+object RBSetMonad
+extends RBSets[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]{
+  import MonadicEvidence._
+  implicit def redF[PQ,OA,OQ]() : Functor[({type L[+PA] = RSetT[PQ,OA,OQ,PA]})#L] =
+    new Functor[({type L[+PA] = RSetT[PQ,OA,OQ,PA]})#L] {
+      def fmap[UA, TA >: UA, SA](
+        f : TA => SA
+      ) : RSetT[PQ,OA,OQ,TA] => RSetT[PQ,OA,OQ,SA] = {
+        def bloop( batm : BA[PQ,OA,OQ,TA] ) : BA[PQ,OA,OQ,SA] = {
+          BSet[PQ,OA,OQ,SA](
+            batm.pq,
+            batm.s.map(
+              {
+                ( RAorBSet : Either[RA[PQ,OA,OQ,TA],BSetT[PQ,OA,OQ,TA]] ) => {
+                  RAorBSet match {
+                    case Left( ratm ) => 
+                      Left[RA[PQ,OA,OQ,SA],BSetT[PQ,OA,OQ,SA]]( fmap( f )( ratm ) )
+                    case Right( bset ) => Right[RA[PQ,OA,OQ,SA],BSetT[PQ,OA,OQ,SA]]( bloop( bset ) )
+                  }
+                }
+              }
+            ),
+            batm.oa
+          )
+        }
+
+	( wps : RSetT[PQ,OA,OQ,TA] ) => {
+	  RSet[PQ,OA,OQ,SA](
+            wps.oq,
+            wps.s.map(
+              ( wbos : Either[BA[PQ,OA,OQ,TA],RSetT[PQ,OA,OQ,TA]] ) => {
+                wbos match {
+                  case Left( batm ) => {
+                    Left[BA[PQ,OA,OQ,SA],RSetT[PQ,OA,OQ,SA]](
+                      bloop( batm )
+                    )
+                  }
+                  case Right( rset ) => {
+                    Right[BA[PQ,OA,OQ,SA],RSetT[PQ,OA,OQ,SA]]( fmap( f )( rset ) )
+                  }
+                }
+              }
+            ),
+            f( wps.pa )
+          )
+	}
+      }
+    }
+}
