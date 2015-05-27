@@ -134,4 +134,49 @@ extends RBSets[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]{
 	}
       }
     }
+  implicit def blkF[PQ,OQ,PA]() : Functor[({type L[+OA] = BSetT[PQ,OA,OQ,PA]})#L] =
+    new Functor[({type L[+OA] = BSetT[PQ,OA,OQ,PA]})#L] {
+      def fmap[UA, TA >: UA, SA](
+        f : TA => SA
+      ) : BSetT[PQ,TA,OQ,PA] => BSetT[PQ,SA,OQ,PA] = {
+        def rloop( ratm : RA[PQ,TA,OQ,PA] ) : RA[PQ,SA,OQ,PA] = {
+          RSet[PQ,SA,OQ,PA](
+            ratm.oq,
+            ratm.s.map(
+              {
+                ( BAorRSet : Either[BA[PQ,TA,OQ,PA],RSetT[PQ,TA,OQ,PA]] ) => {
+                  BAorRSet match {
+                    case Left( batm ) => 
+                      Left[BA[PQ,SA,OQ,PA],RSetT[PQ,SA,OQ,PA]]( fmap( f )( batm ) )
+                    case Right( rset ) => Right[BA[PQ,SA,OQ,PA],RSetT[PQ,SA,OQ,PA]]( rloop( rset ) )
+                  }
+                }
+              }
+            ),
+            ratm.pa
+          )
+        }
+
+	( wps : BSetT[PQ,TA,OQ,PA] ) => {
+	  BSet[PQ,SA,OQ,PA](
+            wps.pq,
+            wps.s.map(
+              ( wbos : Either[RA[PQ,TA,OQ,PA],BSetT[PQ,TA,OQ,PA]] ) => {
+                wbos match {
+                  case Left( ratm ) => {
+                    Left[RA[PQ,SA,OQ,PA],BSetT[PQ,SA,OQ,PA]](
+                      rloop( ratm )
+                    )
+                  }
+                  case Right( bset ) => {
+                    Right[RA[PQ,SA,OQ,PA],BSetT[PQ,SA,OQ,PA]]( fmap( f )( bset ) )
+                  }
+                }
+              }
+            ),
+            f( wps.oa )
+          )
+	}
+      }
+    }
 }
