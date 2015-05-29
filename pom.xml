@@ -62,6 +62,23 @@
       <version>1.8</version>
       <scope>test</scope>
     </dependency>
+
+    <!-- BNFC dependencies -->
+    <dependency>
+    	<groupId>jlex</groupId>
+    	<artifactId>JLex-local</artifactId>
+    	<version>local</version>
+    </dependency>
+    <dependency>
+      <groupId>cup</groupId>
+      <artifactId>java-cup-11a</artifactId>
+      <version>local</version>
+    </dependency>
+    <dependency>
+      <groupId>cup</groupId>
+      <artifactId>java-cup-11a-runtime</artifactId>
+      <version>local</version>
+    </dependency>    
   </dependencies>
 
   <build>
