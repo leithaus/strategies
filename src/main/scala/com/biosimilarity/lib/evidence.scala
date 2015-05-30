@@ -28,22 +28,36 @@ object MonadicEvidence {
   // by some outer scope. If, in this case we can establish the
   // monadicity of the curried type, then we say that C is monadic in Y.
 
-  trait Monad[C[_]] extends Functor[C] {      
+  trait MonadT[C[_]] extends Functor[C] {      
     def apply[S]( data : S ) : C[S]      
     def flatten[S]( m : C[C[S]]) : C[S]    
-    final def fmap[S,P >: S, T]( f : P => T ): C[P] => C[T] = {
-      ( mp : C[P] ) => bind( mp )( ( p : P ) => apply[T]( f( p ) ) )
-    }    
+    def fmap[S,P >: S, T]( f : P => T ): C[P] => C[T] //= {
+      //( mp : C[P] ) => bind( mp )( ( p : P ) => apply[T]( f( p ) ) )
+    //}    
+    def bind[S, P >: S, T](
+      mp : C[P]
+    )( t : P => C[T] ) : C[T]// = {
+      // flatten( fmap( t )( mp ) )
+    //}    
+  }
+
+  trait MonadCT[C[_]] extends MonadT[C] {              
     final def bind[S, P >: S, T](
       mp : C[P]
     )( t : P => C[T] ) : C[T] = {
       flatten( fmap( t )( mp ) )
     }    
-  }       
+  }
+
+  trait MonadB[C[_]] extends MonadT[C] {      
+    final def fmap[S,P >: S, T]( f : P => T ): C[P] => C[T] = {
+      ( mp : C[P] ) => bind( mp )( ( p : P ) => apply[T]( f( p ) ) )
+    }            
+  }
   
   // Evidence for M's monadicity can be used to produce a canonical
   // interpretation of for-comprehension syntax.
-  implicit def monadToComprehension[M[C[_]] <: Monad[C],C[_],V](
+  implicit def monadToComprehension[M[C[_]] <: MonadT[C],C[_],V](
     cv : C[V]
   )( implicit monad : M[C] ) = new {
     def map[U]( f : V => U ) = monad.fmap( f )( cv )
@@ -60,7 +74,7 @@ object MonadPlusEvidence {
   // called, imaginatively enough, MonadPlus.
 
   trait MonadPlus[C[_]] {
-    self : Monad[C] =>
+    self : MonadT[C] =>
     def zero[A] : C[A]
     def plus[A]( ca1 : C[A] )( ca2 : C[A] ) : C[A]
   }
@@ -73,11 +87,11 @@ object FilteredMonadEvidence {
   // predicated will be called a FilteredMonad.
 
   trait FilteredMonad[C[_]] {
-    self : Monad[C] =>
+    self : MonadT[C] =>
     def filter[A]( ca : C[A] )( pred : A => Boolean ) : C[A]      
   }
 
-  implicit def monadToFilteredComprehension[M[C[_]] <: Monad[C] with FilteredMonad[C],C[_],V](
+  implicit def monadToFilteredComprehension[M[C[_]] <: MonadT[C] with FilteredMonad[C],C[_],V](
     cv : C[V]
   )( implicit fmonad : M[C] ) = new {
     def map[U]( f : V => U ) = fmonad.fmap( f )( cv )
