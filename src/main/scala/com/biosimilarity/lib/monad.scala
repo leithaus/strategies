@@ -134,6 +134,35 @@ extends RBSets[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]{
 	}
       }
     }
+
+//   implicit def redMnd[PQ,OQ,PA]() : MonadB[({type L[+PA] = RSetT[PQ,OA,OQ,PA]})#L] = {
+//     new MonadCT[({type L[+PA] = RSetT[PQ,OA,OQ,PA]})#L] {
+//       override def fmap[UA, TA >: UA, SA](
+//         f : TA => SA
+//       ) : RSetT[PQ,OA,OQ,TA] => RSetT[PQ,OA,OQ,SA] = {
+//         refF[PQ,OQ,PA]().fmap( f )
+//       }
+//       override def apply[SA >: PA, SQ >: OQ](
+//         data : SA
+//       )( implicit justification : SA => SQ ) : RSetT[PQ,OA,OQ,SA] = {
+//         RSet(
+//           justification( data ),
+//           List[Either[BA[PQ,OA,SQ,SA],RSetT[PQ,OA,SQ,SA]]].toStream(),
+//           data
+//         )
+//       }
+//       override def bind[S, P >: S, T](
+//         mp : RSetT[PQ,OA,OQ,P]
+//       )( t : P => RSetT[PQ,OA,OQ,T] ) RSetT[PQ,OA,OQ,T] = {
+//         RSet(
+//           mp.oq,
+//           bloop( mp.s ),
+//           t( mp.pa )
+//         )
+//       }
+//     }
+//   }
+
   implicit def blkF[PQ,OQ,PA]() : Functor[({type L[+OA] = BSetT[PQ,OA,OQ,PA]})#L] =
     new Functor[({type L[+OA] = BSetT[PQ,OA,OQ,PA]})#L] {
       def fmap[UA, TA >: UA, SA](

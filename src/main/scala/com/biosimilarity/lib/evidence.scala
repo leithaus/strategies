@@ -30,26 +30,24 @@ object MonadicEvidence {
 
   trait MonadT[C[_]] extends Functor[C] {      
     def apply[S]( data : S ) : C[S]      
-    def flatten[S]( m : C[C[S]]) : C[S]    
-    def fmap[S,P >: S, T]( f : P => T ): C[P] => C[T] //= {
-      //( mp : C[P] ) => bind( mp )( ( p : P ) => apply[T]( f( p ) ) )
-    //}    
-    def bind[S, P >: S, T](
-      mp : C[P]
-    )( t : P => C[T] ) : C[T]// = {
-      // flatten( fmap( t )( mp ) )
-    //}    
+    def flatten[S]( m : C[C[S]] ) : C[S]    
+    def fmap[S,P >: S, T]( f : P => T ) : C[P] => C[T]
+    def bind[S, P >: S, T]( mp : C[P] )( t : P => C[T] ) : C[T]
   }
 
   trait MonadCT[C[_]] extends MonadT[C] {              
-    final def bind[S, P >: S, T](
-      mp : C[P]
-    )( t : P => C[T] ) : C[T] = {
+    final def bind[S, P >: S, T]( mp : C[P] )( t : P => C[T] ) : C[T] = {
       flatten( fmap( t )( mp ) )
     }    
   }
 
   trait MonadB[C[_]] extends MonadT[C] {      
+    final def flatten[S]( mm : C[C[S]] ) : C[S] = {
+      bind( mm )( ( m : C[S] ) => m )
+    }            
+  }
+
+  trait MonadBF[C[_]] extends MonadB[C] {      
     final def fmap[S,P >: S, T]( f : P => T ): C[P] => C[T] = {
       ( mp : C[P] ) => bind( mp )( ( p : P ) => apply[T]( f( p ) ) )
     }            
