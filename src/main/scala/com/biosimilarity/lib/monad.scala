@@ -135,12 +135,12 @@ extends RBSets[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]{
       }
     }
 
-//   implicit def redMnd[PQ,OQ,PA]() : MonadB[({type L[+PA] = RSetT[PQ,OA,OQ,PA]})#L] = {
-//     new MonadCT[({type L[+PA] = RSetT[PQ,OA,OQ,PA]})#L] {
+  // implicit def redMnd[PQ,OA,OQ]() : MonadB[({type L[+PA] = RSetT[PQ,OA,OQ,PA]})#L] = {
+//     new MonadB[({type L[+PA] = RSetT[PQ,OA,OQ,PA]})#L] {
 //       override def fmap[UA, TA >: UA, SA](
 //         f : TA => SA
 //       ) : RSetT[PQ,OA,OQ,TA] => RSetT[PQ,OA,OQ,SA] = {
-//         refF[PQ,OQ,PA]().fmap( f )
+//         RBSetMonad.refF[PQ,OQ,PA]().fmap( f )
 //       }
 //       override def apply[SA >: PA, SQ >: OQ](
 //         data : SA
@@ -153,11 +153,45 @@ extends RBSets[PlayerQuestionT,OpponentAnswerT,OpponentQuestionT,PlayerAnswerT]{
 //       }
 //       override def bind[S, P >: S, T](
 //         mp : RSetT[PQ,OA,OQ,P]
-//       )( t : P => RSetT[PQ,OA,OQ,T] ) RSetT[PQ,OA,OQ,T] = {
+//       )( t : P => RSetT[PQ,OA,OQ,T] )(
+//         implicit join : ( OQ, OQ ) => OQ
+//       ) : RSetT[PQ,OA,OQ,T] = {
+//         def bloop(
+//           s : Stream[Either[BA[PQ,OA,OQ,P],RSetT[PQ,OA,OQ,P]]]
+//         ) : Stream[Either[BA[PQ,OA,OQ,T],RSetT[PQ,OA,OQ,T]]] = {
+//           s.map(
+//             ( eBAorRSet : Either[BA[PQ,OA,OQ,P],RSetT[PQ,OA,OQ,P]] ) => {
+//               eBAorRSet match {
+//                 case Left( ba ) => {
+//                   Left(
+//                     BSet(
+//                       ba.pq,
+//                       ba.s.map(
+//                         ( eBAorRSet : Either[RA[PQ,OA,OQ,P],BSetT[PQ,OA,OQ,P]] ) => {
+//                           case Left( ra ) => {
+//                             Left( bind( ra )( t ) )
+//                           }
+//                           case Right( bset ) => {
+//                             Right( bloop( bset ) )
+//                           }
+//                         }
+//                       ),
+//                       ba.oa
+//                     )
+//                   )
+//                 }
+//                 case Right( rset ) => {
+//                   Right( bind( rset )( t ) )
+//                 }
+//               }
+//             }
+//           )
+//         }
+//         val RSet( toq, ts, tpa ) = t( mp.pa )
 //         RSet(
-//           mp.oq,
-//           bloop( mp.s ),
-//           t( mp.pa )
+//           join( mp.oq, toq ),
+//           bloop( mp.s ).union( ts ),
+//           tpa
 //         )
 //       }
 //     }
