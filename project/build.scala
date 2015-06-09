@@ -1,12 +1,22 @@
-// -*- mode: Scala;-*- 
-// Filename:    build.scala 
-// Authors:     lgm                                                    
-// Creation:    Wed Jun  3 09:00:53 2015 
-// Copyright:   Not supplied 
-// Description: 
-// ------------------------------------------------------------------------
-
 import sbt._
+import Keys._
 
+object StrategiesBuild extends Build {
+  
+  val cxVersion = SettingKey[String]("cx-version", "2.5")
+  val cxPort = SettingKey[String]("cx-port", "8180")
+  val cxRouter = SettingKey[String]("cx-router", "com.biosimilarity.mdp4tw.Main")
+  
+  override lazy val settings =
+    super.settings ++ Seq(
+      cxVersion := "2.5",
+      cxPort := "8180",
+      cxRouter := "com.biosimilarity.mdp4tw.Main"
+    )
 
-object MyBuild extends com.typesafe.sbt.pom.PomBuild
+  lazy val root =
+    Project(id = "strategies",
+            base = file("."),
+            settings = Project.defaultSettings
+          )
+}
