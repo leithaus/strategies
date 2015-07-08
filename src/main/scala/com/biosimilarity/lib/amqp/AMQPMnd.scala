@@ -92,6 +92,38 @@ trait AMQPBrokerScope[T] extends Serializable {
 	}
       }
     }
+
+    def sender [A] ( 
+      uri : URI,
+      exchange : String,
+      routingKey : String
+    ) : Generator[Unit, A, Unit] = {      
+      factory.setUri( uri );
+      val conn = factory.newConnection()
+      val channel = conn.createChannel()
+      val qname = ( exchange + "_queue" )
+	channel.exchangeDeclare( exchange, "direct" )
+      channel.queueDeclare( qname, true, false, false, null );
+      channel.queueBind( qname, exchange, routingKey )
+	  
+      Generator {
+	k : ( Unit => A @suspendable ) => {
+	  spawn {
+	    val bytes = new ByteArrayOutputStream
+	    val store = new ObjectOutputStream(bytes)
+	    store.writeObject( k() )
+	    store.close
+	    //println( "calling basicPublish on " + channel )
+	    channel.basicPublish(
+	      exchange,
+	      routingKey,
+	      properties.getOrElse( null ),
+	      bytes.toByteArray
+	    )	    
+	  }
+	}
+      }
+    }
     
     def senderChannel [A] ( 
       host : String,

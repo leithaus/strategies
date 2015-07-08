@@ -8,6 +8,8 @@
 
     <!-- Bootstrap -->
     <link href="http://getbootstrap.com/dist/css/bootstrap.min.css" rel="stylesheet">
+    link href="http://netdna.bootstrapcdn.com/font-awesome/3.1.0/css/font-awesome.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="socialfeed.min.css">
 
     <style type="text/css">
       
@@ -34,6 +36,30 @@
 		float: left;
 	}
     </style>
+    <style>
+    body {
+      background: #3f4c6b; /* Old browsers */
+      background: -moz-radial-gradient(center, ellipse cover,  #3f4c6b 0%, #3f4c6b 100%); /* FF3.6+ */
+      background: -webkit-gradient(radial, center center, 0px, center center, 100%, color-stop(0%,#3f4c6b), color-stop(100%,#3f4c6b)); /* Chrome,Safari4+ */
+      background: -webkit-radial-gradient(center, ellipse cover,  #3f4c6b 0%,#3f4c6b 100%); /* Chrome10+,Safari5.1+ */
+      background: -o-radial-gradient(center, ellipse cover,  #3f4c6b 0%,#3f4c6b 100%); /* Opera 12+ */
+      background: -ms-radial-gradient(center, ellipse cover,  #3f4c6b 0%,#3f4c6b 100%); /* IE10+ */
+      background: radial-gradient(ellipse at center,  #3f4c6b 0%,#3f4c6b 100%); /* W3C */
+      filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#3f4c6b', endColorstr='#3f4c6b',GradientType=1 ); /* IE6-9 fallback on horizontal gradient */
+
+      color: #f9f9f9;
+    }
+
+    a:link, a:visited {
+      color: #33D5F5;
+      text-decoration: none;
+      transition: 500ms;
+    }
+
+    a:hover, a:active {
+      color: #0CAAC9;
+    }
+  </style>
 
 	<script src="http://yui.yahooapis.com/3.17.2/build/yui/yui.js"></script>
 
@@ -41,8 +67,9 @@
 	<!-- The loader is recommanded if you're debugging WireIt (comment the line before) -->
 	<script type="text/javascript" src="wireit/build/wireit-loader/wireit-loader-min.js"></script>
 
-	<script type="text/javascript" src="logic-gates.js"></script>
-
+	<script type="text/javascript" src="logic-gates.js"></script>        
+        <script src="SocialFeed.js/bower_components/jquery/jquery.js"></script>
+        <script src="SocialFeed.js/socialfeed.js"></script>
   </head>
 
   <body class="yui3-skin-sam">
@@ -51,7 +78,8 @@
       <div class="container-fluid">
           <span class="navbar-brand">Synereo DJ</span>
       </div>
-    </div>
+      <div id="socialfeed" class="socialfeed-container">
+    </div>    
 
 
 <script id="t-editor" type="text/x-handlebars-template">
@@ -116,6 +144,32 @@
 		</div>
 	</div>
 </script>
+
+<script>
+
+    ;(function () {
+      var sfeed1 = new SocialFeed({
+                      el: $('#socialfeed')
+                    , count: 50
+                  })
+                  .addModule(new SocialFeed.Modules.Disqus('mikaelbr', 'OEMdBc63xd0MZGKiVV5JgExTqdO7OSYkjgv613LJ8Py89y44pcoSKeBrelZjepVS'))
+                  .addModule(new SocialFeed.Modules.Github('mikaelbr', {
+                    'IssuesEvent': false
+                  }))
+                  .addModule(new SocialFeed.Modules.Delicious('mikaelbr'))
+                  .addModule(new SocialFeed.Modules.Tumblr('peacecorps.tumblr.com', 'VLazrfQDUhSamA0EX42IYdkec3MjDfheKKIrToxnVJOa0qii1g'))
+                  .addModule(new SocialFeed.Modules.Vimeo('mikaelbr'))
+                  .start();
+
+      sfeed1.on('dataReady', function (htmlList, modules) {
+        console.log(htmlList);
+        console.log(modules);
+      });
+
+      window.sfeed = sfeed1;
+    })();
+
+  </script>
 
   </body>
 </html>

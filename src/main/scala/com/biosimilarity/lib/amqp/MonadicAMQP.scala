@@ -74,22 +74,56 @@ trait MonadicAMQPDispatcher[T]
 	  //}
 	//}      
       }
-    }   
+    }
 
-  override def beginService(
-    factory : ConnectionFactory,
-    host : String,
-    port : Int
-  ) = {
-    beginService( factory, host, port, "mult" )
-  }
+   def acceptConnections(
+     factory : ConnectionFactory,
+     uri : URI
+   ) = {
+     factory.setUri( uri );
+     Generator {
+       k : ( Channel => Unit @suspendable ) => {
+	 //shift {
+	 //innerk : (Unit => Unit @suspendable) => {
+         
+	 val connection =
+           factory.newConnection()
+	 val channel =
+	   connection.createChannel()
+	 k( channel );
+	 //}
+	 //}      
+       }
+     }
+   }
 
-   def beginService(
-    factory : ConnectionFactory,
-    host : String,
-    port : Int,
-    exQNameRoot : String
-  ) = serve [T] ( factory, host, port, exQNameRoot )
+   override def beginService (
+     factory : ConnectionFactory,
+     host : String,
+     port : Int
+   ) : Generator[T,Unit,Unit] = {
+     beginService ( factory, host, port, "mult" )
+   }
+
+   def beginService (
+     factory : ConnectionFactory,
+     uri : URI
+   ) : Generator[T,Unit,Unit] = {
+     beginService ( factory, uri, "mult" )
+   }
+
+   def beginService (
+     factory : ConnectionFactory,
+     host : String,
+     port : Int,
+     exQNameRoot : String
+   ) : Generator[T,Unit,Unit] = serve [T] ( factory, host, port, exQNameRoot )
+
+   def beginService (
+     factory : ConnectionFactory,
+     uri : URI,
+     exQNameRoot : String
+   ) : Generator[T,Unit,Unit] = serve [T] ( factory, uri, exQNameRoot )
 
    def serve [T] (
     factory : ConnectionFactory,
@@ -104,6 +138,34 @@ trait MonadicAMQPDispatcher[T]
 	)
 
 	for( channel <- acceptConnections( factory, host, port ) ) {
+	  spawn {
+	    // Open bracket
+	    BasicLogService.blog( "Connected: " + channel )
+            val qname = (exQNameRoot + "_queue")
+            channel.exchangeDeclare( exQNameRoot, "direct" )
+            channel.queueDeclare(qname, true, false, false, null);
+            channel.queueBind( qname, exQNameRoot, "routeroute" )
+
+            for ( t <- read [T] ( channel, exQNameRoot ) ) { k( t ) }
+
+            // Close bracket
+	  }
+	}
+      //}
+  }
+
+   def serve [T] (
+     factory : ConnectionFactory,
+     uri: URI,
+     exQNameRoot : String
+   ) = Generator {
+    k : ( T => Unit @suspendable ) =>
+      //shift {
+	BasicLogService.blog(
+	  "The rabbit is running... (with apologies to John Updike)"
+	)
+
+	for( channel <- acceptConnections( factory, uri ) ) {
 	  spawn {
 	    // Open bracket
 	    BasicLogService.blog( "Connected: " + channel )
