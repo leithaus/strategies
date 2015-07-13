@@ -57,9 +57,10 @@ trait AMQPBrokerScope[T] extends Serializable {
   def properties : Option[AMQP.BasicProperties] = None
 
   class StdMonadicAMQPSndrRcvr[A](
-    override val host : String,
-    override val port : Int
-  ) extends StdMonadicAMQPDispatcher[A]( host, port )
+    uri : URI
+    //override val host : String,
+    //override val port : Int
+  ) extends StdMonadicAMQPDispatcher[A]( uri ) //StdMonadicAMQPDispatcher[A]( host, port )
   with Serializable {
     def sender [A] ( 
       host : String,
@@ -143,7 +144,8 @@ trait AMQPBrokerScope[T] extends Serializable {
 
   override type MDS[A] = StdMonadicAMQPSndrRcvr[A]
   override def protoMDS[A] =
-    new StdMonadicAMQPSndrRcvr[A]( "", -1 )
+   // new StdMonadicAMQPSndrRcvr[A]( "", -1 )
+     new StdMonadicAMQPSndrRcvr[A]( null )
 
   trait AMQPAbstractQueue[T] extends Serializable {
     def exchange : String
@@ -407,8 +409,9 @@ trait AMQPBrokerScope[T] extends Serializable {
   }
 
   class AMQPQueueM[A](
-    val host : String,
-    val port : Int,
+    val uri : URI,
+    //val host : String,
+    //val port : Int,
     override val exchange : String,
     override val routingKey : String
   ) extends AMQPQueueMQT[A,AMQPQueue] {            
@@ -416,16 +419,19 @@ trait AMQPBrokerScope[T] extends Serializable {
       AMQPQueue[A](
 	exchange,
 	routingKey,
-	theMDS.serve[A]( factory, host, port, exchange ),
-	theMDS.sender[A]( host, port, exchange, routingKey )
+	//theMDS.serve[A]( factory, host, port, exchange ),
+        theMDS.serve[A]( factory, uri, exchange ),
+	//theMDS.sender[A]( host, port, exchange, routingKey )
+        theMDS.sender[A]( uri, exchange, routingKey )
       )
     }    
     override def equals( o : Any ) : Boolean = {
       o match {
 	case that : AMQPQueueM[A] => {
 	  (
-	    host.equals( that.host )
-	    && port.equals( that.port )
+	    //host.equals( that.host )
+            uri.equals( that.uri )
+	    //&& port.equals( that.port )
 	    && exchange.equals( that.exchange )
 	    && routingKey.equals( that.routingKey )
 	  )
@@ -436,8 +442,9 @@ trait AMQPBrokerScope[T] extends Serializable {
     
     override def hashCode( ) : Int = {
       (
-	( 37 * host.hashCode )
-	+ ( 37 * port.hashCode )
+	//( 37 * host.hashCode )
+        ( 37 * uri.hashCode )
+	//+ ( 37 * port.hashCode )
 	+ ( 37 * exchange.hashCode )
 	+ ( 37 * routingKey.hashCode )
       )
@@ -446,42 +453,51 @@ trait AMQPBrokerScope[T] extends Serializable {
 
   object AMQPQueueM {
     def apply [A] (
-      host : String,
-      port : Int,
+      uri : URI,
+      //host : String,      
+      //port : Int,
       exchange : String,
       routingKey : String
     ) : AMQPQueueM[A] = {
-      new AMQPQueueM[A] ( host, port, exchange, routingKey )
+      //new AMQPQueueM[A] ( host, port, exchange, routingKey )
+      new AMQPQueueM[A] ( uri, exchange, routingKey )
     }
     def unapply [A] (
       amqpQM : AMQPQueueM[A]
-    ) : Option[( String, Int, String, String )] = {
+    ) : Option[( URI, String, String )] = { //Option[( String, Int, String, String )] = {
       Some(
-	( amqpQM.host, amqpQM.port, amqpQM.exchange, amqpQM.routingKey )
+	//( amqpQM.host, amqpQM.port, amqpQM.exchange, amqpQM.routingKey )
+        ( amqpQM.uri, amqpQM.exchange, amqpQM.routingKey )
       )
     }
   }
 
   case class AMQPQueueHostExchangeM[A] (
-    override val host : String,
+    override val uri : URI,
+    //override val host : String,
     override val exchange : String
   ) extends AMQPQueueM[A](
-    host,
-    AMQPDefaults.defaultPort,
+    //host,
+    //AMQPDefaults.defaultPort,
+    uri,
     exchange,
     "routeroute"
   )
 
   case class AMQPQueueHostURIM[A] (
-    uri : URI
+    override val uri : URI
   ) extends AMQPQueueM[A](
-    uri.getHost,
-    {
-      uri.getPort match {
-	case -1 => AMQPDefaults.defaultPort
-	case port => port
-      }
-    },
+    //uri.getHost,
+    // {
+//       uri.getPort match {
+// 	case -1 => AMQPDefaults.defaultPort
+// 	case port => port
+//       }
+//     }
+    new URI(
+      uri.getScheme, uri.getUserInfo, uri.getHost, uri.getPort,
+      "/" + uri.getPath.split( "/" )( 1 ), uri.getQuery, uri.getFragment
+    ),
     {
       val spath = uri.getPath.split( "/" )
       spath.length match {
@@ -489,7 +505,8 @@ trait AMQPBrokerScope[T] extends Serializable {
       case 0 => AMQPDefaults.defaultExchange
       case _ => spath( 1 )
       }
-    },
+    }
+    ,
     {
       val qmap = new HashMap[String,String]( )
       uri.getQuery.split( "," ).map(
@@ -508,12 +525,19 @@ trait AMQPBrokerScope[T] extends Serializable {
   case class AMQPQueueHostMonikerM[A] (
     moniker : Moniker
   ) extends AMQPQueueM[A](
-    moniker.getHost,
+    //moniker.getHost,
+    // {
+//       moniker.getPort match {
+// 	case -1 => AMQPDefaults.defaultPort
+// 	case port => port
+//       }
+//     }
     {
-      moniker.getPort match {
-	case -1 => AMQPDefaults.defaultPort
-	case port => port
-      }
+      val uri = moniker.uri
+      new URI(
+        uri.getScheme, uri.getUserInfo, uri.getHost, uri.getPort,
+        "/" + uri.getPath.split( "/" )( 1 ), uri.getQuery, uri.getFragment
+      )
     },
     {
       val spath = moniker.getPath.split( "/" )
@@ -590,16 +614,17 @@ class AMQPNodeJSScope (
   @transient val theNodeMDS : StdMonadicAMQPNodeJSSndrRcvr = protoNode
   def protoMDSNode : MDS[String] = protoNode
   def protoNode : StdMonadicAMQPNodeJSSndrRcvr =
-    new StdMonadicAMQPNodeJSSndrRcvr( "", -1 )
-  
+    //new StdMonadicAMQPNodeJSSndrRcvr( "", -1 )
+    new StdMonadicAMQPNodeJSSndrRcvr( null )
 
   @transient override lazy val properties : Option[AMQP.BasicProperties] = 
     Some( new AMQP.BasicProperties.Builder().contentType( "application/json" ).build() )
 
   class StdMonadicAMQPNodeJSSndrRcvr(
-    override val host : String,
-    override val port : Int
-  ) extends StdMonadicAMQPSndrRcvr[String]( host, port ) {
+    uri : URI
+    //override val host : String,
+    //override val port : Int
+  ) extends StdMonadicAMQPSndrRcvr[String]( uri ) { //StdMonadicAMQPSndrRcvr[String]( host, port ) {
     def readJSON ( channel : Channel, exQNameRoot : String ) =
       Generator {
 	k: ( String => Unit @suspendable) =>
@@ -682,25 +707,83 @@ class AMQPNodeJSScope (
 	}
       }
     }
+
+    def serveJSON (
+      factory : ConnectionFactory,
+      uri : URI,
+      exQNameRoot : String
+    ) = Generator {
+      k : ( String => Unit @suspendable ) =>
+	//shift {
+	BasicLogService.blog(
+	  "The rabbit is running... (with apologies to John Updike)"
+	)
+
+	for( channel <- acceptConnections( factory, uri ) ) {
+	  spawn {
+	    // Open bracket
+	    BasicLogService.blog( "Connected: " + channel )
+            val qname = (exQNameRoot + "_queue")
+            channel.exchangeDeclare( exQNameRoot, "direct" )
+            channel.queueDeclare(qname, true, false, false, null);
+            channel.queueBind( qname, exQNameRoot, "routeroute" )
+
+            for ( t <- readJSON ( channel, exQNameRoot ) ) { k( t ) }
+
+            // Close bracket
+	  }
+	}
+      //}
+    }
+
+    def senderJSON ( 
+      uri : URI,
+      exchange : String,
+      routingKey : String
+    ) : Generator[Unit, String, Unit] = {      
+      factory.setUri( uri )
+      val conn = factory.newConnection()
+      val channel = conn.createChannel()
+      val qname = ( exchange + "_queue" )
+	channel.exchangeDeclare( exchange, "direct" )
+      channel.queueDeclare( qname, true, false, false, null );
+      channel.queueBind( qname, exchange, routingKey )
+	  
+      Generator {
+	k : ( Unit => String @suspendable ) => {
+	  spawn {	   
+	    channel.basicPublish(
+	      exchange,
+	      routingKey,
+	      properties.getOrElse( null ),
+	      k( ).getBytes
+	    )	    
+	  }
+	}
+      }
+    }
   }
 
   class AMQPNodeJSQueueM(
-    override val host : String,
+    val host : String,
     override val exchange : String
-  ) extends AMQPQueueHostExchangeM[String]( host, exchange ) {            
+  ) //extends AMQPQueueHostExchangeM[String]( host, exchange ) {            
+  extends AMQPQueueHostExchangeM[String]( new URI( host ), exchange ) {
     def zeroJSON : AMQPQueue[String] = {
       AMQPQueue[String](
 	exchange,
 	"routeroute",
 	theNodeMDS.serveJSON(
 	  factory,
-	  host,
-	  AMQPDefaults.defaultPort,
+	  //host,          
+	  //AMQPDefaults.defaultPort,
+          uri,
 	  exchange
 	).asInstanceOf[AMQPNodeJSScope.this.theMDS.Generator[String,Unit,Unit]],
 	theNodeMDS.senderJSON(
-	  host,
-	  AMQPDefaults.defaultPort,
+	  //host,          
+	  //AMQPDefaults.defaultPort,
+          uri,
 	  exchange,
 	  "routeroute"
 	).asInstanceOf[AMQPNodeJSScope.this.theMDS.Generator[Unit,String,Unit]]
@@ -831,9 +914,11 @@ package usage {
       val trgtScope = new AMQPStdScope[Int]()
       
       val srcQM =
-	new srcScope.AMQPQueueHostExchangeM[Int]( srcHost, queueStr )
+	//new srcScope.AMQPQueueHostExchangeM[Int]( srcHost, queueStr )
+        new srcScope.AMQPQueueHostExchangeM[Int]( new URI( srcHost ), queueStr )
       val trgtQM =
-	new trgtScope.AMQPQueueHostExchangeM[Int]( trgtHost, queueStr )
+	//new trgtScope.AMQPQueueHostExchangeM[Int]( trgtHost, queueStr )
+        new trgtScope.AMQPQueueHostExchangeM[Int]( new URI( trgtHost ), queueStr )
 
       val srcQ = srcQM.zero[Int]
       val trgtQ = trgtQM.zero[Int]

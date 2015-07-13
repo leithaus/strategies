@@ -506,7 +506,107 @@ package usage {
       }
 
       loop( msgCount )
-    }        
+    }
+
+//     def testJSON(
+//       parity : Boolean,
+//       srcHost : URI,
+//       trgtHost : URI,
+//       queueStr : String,
+//       msgCount : Int
+//     ) = {      
+//       val factory = new ConnectionFactory()
+
+//       factory.setUri(
+//         if ( parity ) { srcHost } else { trgtHost }
+//       )
+
+//       val scope : StdJSONOverAMQPTwistedPairScope[Int] =
+// 	StdJSONOverAMQPTwistedPairScope[Int]( factory, srcHost, trgtHost )
+
+//       val qpM : scope.JSONOverAMQPTwistedPairXFormM[Int] =
+// 	new scope.JSONOverAMQPTwistedPairXFormM[Int]( queueStr, "routeroute" )
+
+//       //val qtp : scope.AMQPAbstractQueue[Int] = qpM.zero[Int]
+//       val qtp : scope.AMQPAbstractQueue[Int] = qpM.zero[Int]
+
+//       val msgMap = new HashMap[Int,Int]()
+
+//       def loop( count : Int ) : Unit = {
+// 	println( "entering msg loop with count : " + count )
+// 	count match {
+// 	  case 0 => {
+// 	    println( "Nothing to do." )
+// 	  }
+// 	  case i => {
+// 	    if ( i < 0 ) {
+// 	      throw new Exception(
+// 		"Tsk, tsk, play fair, now... please keep msg counts positive!"
+// 	      )
+// 	    }
+// 	    else {
+// 	      println(
+// 		"Waiting for a message on queue : " + queueStr
+// 	      )
+// 	      for( msg <- qpM( qtp ) ) {
+// 		val mms = msgMap.size
+// 		println(
+// 		  (
+// 		    "received msg number " + mms
+// 		    + " with contents " + msg
+// 		    + " on " + queueStr 
+// 		  )
+// 		)
+
+// 		msgMap += ( ( (mms + 1), msg ) )
+
+// 		if ( mms == count - 1 ) {
+// 		  if ( !parity ) {
+// 		    println(
+// 		      "Ha! We have the last word with msg " + mms
+// 		    )
+// 		    qtp ! mms
+// 		  }
+// 		  println( "All " + count + " messages sent and received." )
+// 		  println( "Conversation summary: " )
+// 		  for( order <- 1 to count ) {
+// 		    val msg = msgMap( order )
+// 		    val prefix = "received " + msg + " "
+// 		    val suffix = 
+// 		      order match {
+// 			case 1 => 1 + "st" + " "
+// 			case 2 => 2 + "nd" + " "
+// 			case 3 => 3 + "rd" + " "
+// 			case _ => order + "th" + " "
+// 		      }
+// 		    println( prefix + suffix + "msg" )
+// 		  }
+// 		  println( "Test successful." )
+// 		}
+// 		else {
+// 		  if ( mms < count ) {
+// 		    println( "replying with msg " + mms )
+// 		    qtp ! mms
+// 		  }
+// 		  else {
+// 		    println( "received unexpected msg: " + msg )
+// 		  }
+// 		}
+// 	      }
+// 	    }
+// 	  }
+// 	}
+//       }
+      
+//       if ( parity ) {
+// 	println(
+// 	  "sending initial msg " + srcSeed + " on queue " + queueStr
+// 	)
+// 	qtp ! srcSeed
+//       }
+
+//       loop( msgCount )
+//     }
     
   }
 }

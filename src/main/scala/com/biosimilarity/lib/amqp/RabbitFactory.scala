@@ -21,6 +21,10 @@ object RabbitFactory
 
   def createIfMissing(key: String, factory: ConnectionFactory, host: String, port: Int): Connection =
   {
+    println( ">*>*>*>" )
+    println( "host:" + host )
+    println( "port:" + port )
+    println( ">*>*>*>" )
     synchronized {
       if ( !_conns.contains(key) ) {
         val conn = factory.newConnection(Array {new Address(host, port)})

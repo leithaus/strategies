@@ -296,9 +296,10 @@ trait DefaultMonadicAMQPDispatcher[T]
 extends MonadicAMQPDispatcher[T] {
   self : WireTap =>
   //import AMQPDefaults._
-  
-  def host : String
-  def port : Int
+    
+  def uri : URI
+  def host : String = uri.getHost
+  def port : Int = uri.getPort
 
   override def tap [A] ( fact : A ) : Unit = {
     BasicLogService.reportage( fact )
@@ -316,32 +317,38 @@ extends MonadicAMQPDispatcher[T] {
 }
 
 class StdMonadicAMQPDispatcher[T](
-  override val host : String,
-  override val port : Int
+  override val uri : URI
+  //override val host : String,
+  //override val port : Int
 ) extends DefaultMonadicAMQPDispatcher[T](
 ) with WireTap {
 }
 
 class StdMonadicJSONAMQPDispatcher[T](
-  override val host : String,
-  override val port : Int
-) extends StdMonadicAMQPDispatcher[String]( host, port )
+  override val uri : URI
+  //override val host : String,
+  //override val port : Int
+) extends StdMonadicAMQPDispatcher[String]( uri ) //StdMonadicAMQPDispatcher[String]( host, port )
 with MonadicJSONAMQPDispatcher[T]
 with MonadicWireToTrgtConversion {
 }
 
 object StdMonadicAMQPDispatcher {
   def apply[T] (
-    host : String, port : Int
+    //host : String, port : Int
+    uri : URI
   ) : StdMonadicAMQPDispatcher[T] = {
     new StdMonadicAMQPDispatcher(
-      host, port
+      //host, port
+      uri
     )
   }
   def unapply[T](
     smAMQPD : StdMonadicAMQPDispatcher[T]
-  ) : Option[(String,Int)] = {
-    Some( ( smAMQPD.host, smAMQPD.port ) )
+  //) : Option[(String,Int)] = {
+    ) : Option[(URI)] = {
+    //Some( ( smAMQPD.host, smAMQPD.port ) )
+    Some( ( smAMQPD.uri ) )
   }    
 }
 
@@ -375,8 +382,8 @@ trait SemiMonadicJSONAMQPTwistedPair[T]
       case Some( jd ) => jd
       case None => {
 	val jd =
-	  new StdMonadicJSONAMQPDispatcher[T]( srcURI.getHost, getPort(srcURI.getPort, port) )
-
+	  //new StdMonadicJSONAMQPDispatcher[T]( srcURI.getHost, getPort(srcURI.getPort, port) )
+          new StdMonadicJSONAMQPDispatcher[T]( srcURI.uri )
 	if ( dispatchOnCreate ) {
 	  reset {
 	    for(
