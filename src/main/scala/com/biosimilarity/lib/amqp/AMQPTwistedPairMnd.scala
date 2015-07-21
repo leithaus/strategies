@@ -148,14 +148,18 @@ trait AMQPTwistedPairScope[T]
 	AMQPQueue[A](
 	  exchange,
 	  routingKey,
-	  theMDS.serve[A]( factory, srcHost, srcPort, exchange ),
-	  theMDS.sender[A]( srcHost, srcPort, exchange, routingKey )
+	  //theMDS.serve[A]( factory, srcHost, srcPort, exchange ),
+          theMDS.serve[A]( factory, src, exchange ),
+	  //theMDS.sender[A]( srcHost, srcPort, exchange, routingKey )
+          theMDS.sender[A]( src, exchange, routingKey )
 	),
 	AMQPQueue[A](
 	  exchange,
 	  routingKey,
-	  theMDS.serve[A]( factory, trgtHost, trgtPort, exchange ),
-	  theMDS.sender[A]( trgtHost, trgtPort, exchange, routingKey )
+	  //theMDS.serve[A]( factory, trgtHost, trgtPort, exchange ),
+          theMDS.serve[A]( factory, trgt, exchange ),
+	  //theMDS.sender[A]( trgtHost, trgtPort, exchange, routingKey )
+          theMDS.sender[A]( trgt, exchange, routingKey )
 	)
       )
     }    
@@ -194,14 +198,18 @@ trait JSONOverAMQPTwistedPairScope[T]
 	  AMQPQueue[String](
 	    exchange,
 	    routingKey,
-	    theMDS.serve[String]( factory, srcHost, srcPort, exchange ),
-	    theMDS.sender[String]( srcHost, srcPort, exchange, routingKey )
+	    //theMDS.serve[String]( factory, srcHost, srcPort, exchange ),
+            theMDS.serve[String]( factory, src, exchange ),
+	    //theMDS.sender[String]( srcHost, srcPort, exchange, routingKey )
+            theMDS.sender[String]( src, exchange, routingKey )
 	  ),
 	  AMQPQueue[String](
 	    exchange,
 	    routingKey,
-	    theMDS.serve[String]( factory, trgtHost, trgtPort, exchange ),
-	    theMDS.sender[String]( trgtHost, trgtPort, exchange, routingKey )
+	    //theMDS.serve[String]( factory, trgtHost, trgtPort, exchange ),
+            theMDS.serve[String]( factory, trgt, exchange ),
+	    //theMDS.sender[String]( trgtHost, trgtPort, exchange, routingKey )
+            theMDS.sender[String]( trgt, exchange, routingKey )
 	  )
 	)
       )
@@ -372,14 +380,18 @@ trait JustificationOverAMQPTwistedPairScope[Req,Rsp]
 	  AMQPQueue[Either[JustifiedRequest[Req,Rsp],JustifiedResponse[Req,Rsp]]](
 	    exchange,
 	    routingKey,
-	    theMDS.serve[Either[JustifiedRequest[Req,Rsp],JustifiedResponse[Req,Rsp]]]( factory, srcHost, srcPort, exchange ),
-	    theMDS.sender[Either[JustifiedRequest[Req,Rsp],JustifiedResponse[Req,Rsp]]]( srcHost, srcPort, exchange, routingKey )
+	    //theMDS.serve[Either[JustifiedRequest[Req,Rsp],JustifiedResponse[Req,Rsp]]]( factory, srcHost, srcPort, exchange ),
+            theMDS.serve[Either[JustifiedRequest[Req,Rsp],JustifiedResponse[Req,Rsp]]]( factory, src, exchange ),
+	    //theMDS.sender[Either[JustifiedRequest[Req,Rsp],JustifiedResponse[Req,Rsp]]]( srcHost, srcPort, exchange, routingKey )
+            theMDS.sender[Either[JustifiedRequest[Req,Rsp],JustifiedResponse[Req,Rsp]]]( src, exchange, routingKey )
 	  ),
 	  AMQPQueue[Either[JustifiedRequest[Req,Rsp],JustifiedResponse[Req,Rsp]]](
 	    exchange,
 	    routingKey,
-	    theMDS.serve[Either[JustifiedRequest[Req,Rsp],JustifiedResponse[Req,Rsp]]]( factory, trgtHost, trgtPort, exchange ),
-	    theMDS.sender[Either[JustifiedRequest[Req,Rsp],JustifiedResponse[Req,Rsp]]]( trgtHost, trgtPort, exchange, routingKey )
+	    //theMDS.serve[Either[JustifiedRequest[Req,Rsp],JustifiedResponse[Req,Rsp]]]( factory, trgtHost, trgtPort, exchange ),
+            theMDS.serve[Either[JustifiedRequest[Req,Rsp],JustifiedResponse[Req,Rsp]]]( factory, trgt, exchange ),
+	    //theMDS.sender[Either[JustifiedRequest[Req,Rsp],JustifiedResponse[Req,Rsp]]]( trgtHost, trgtPort, exchange, routingKey )
+            theMDS.sender[Either[JustifiedRequest[Req,Rsp],JustifiedResponse[Req,Rsp]]]( trgt, exchange, routingKey )
 	  )
 	)
       )
