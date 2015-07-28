@@ -1,0 +1,78 @@
+// -*- mode: Scala;-*- 
+// Filename:    casper.scala 
+// Authors:     lgm                                                    
+// Creation:    Thu Jul 23 07:05:15 2015 
+// Copyright:   Not supplied 
+// Description: 
+// ------------------------------------------------------------------------
+
+package com.synereo.casper
+
+trait BetT {
+  def round : Int
+  def prob : Double
+}
+
+case class Bet(
+  override val round : Int,
+  override val prob : Double
+) extends BetT
+
+trait ConsensusDataT[Hash,Signature]
+trait BlockT[Address,Data,Hash,Signature] extends ConsensusDataT[Hash,Signature] {
+  def entries : List[EntryT[Address,Data,Hash,Signature]]
+  def signature : Signature
+}
+
+trait ValidationT[Hash,Signature] extends ConsensusDataT[Hash,Signature]
+
+case class Validation[Hash,Signature](
+  bets : List[Bet],
+  signature : Signature
+) extends ValidationT[Hash,Signature]
+ 
+trait EvidenceT[Hash,Signature] extends ConsensusDataT[Hash,Signature]
+
+case class Evidence[Hash,Signature](
+  address : Address,
+  validations : List[ValidationT[Hash,Signature]]
+) extends EvidenceT[Hash,Signature]
+
+case class Block[Address,Data,Hash,Signature](
+  override val entries : List[EntryT[Address,Data,Hash,Signature]],
+  override val signature : Signature
+) extends BlockT[Signature]
+
+trait EntryT[Address,Data,Hash,Signature] {
+  def prev : Hash
+  def post : Hash
+}
+
+trait GhostT[Address,Data,Hash,Signature] extends EntryT[Address,Data,Hash,Signature]
+trait ReorgT[Address,Data,Hash,Signature] extends EntryT[Address,Data,Hash,Signature]
+trait TxnT[Address,Data,Hash,Signature] extends EntryT[Address,Data,Hash,Signature]
+
+case class Ghost[Hash](
+  override val prev : Hash,
+  consensusData : ConsensusDataT,
+  override val post : Hash
+) extends GhostT[Hash]
+
+case class Reorg[Hash](
+  override val prev : Hash,
+  txn : List[TxnT[Hash]],
+  override val post : Hash
+) extends ReorgT[Hash]
+
+case class TxnPayLoad[Address,Data,Signature](
+  receiver : Address,
+  data : Data,
+  signature : Signature
+)
+
+case class Txn[Address,Data,Hash,Signature](
+  override val prev : Hash,
+  payload : TxnPayLoad[Address,Data,Signature],
+  override val post : Hash
+) extends TxnT[Address,Data,Hash,Signature]
+
