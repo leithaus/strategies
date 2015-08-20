@@ -20,7 +20,9 @@ case class Bet(
 
 trait ConsensusDataT[Address,Hash,Signature]
 trait BlockT[Address,Data,Hash,Signature] extends ConsensusDataT[Address,Hash,Signature] {
-  def entries : List[EntryT[Address,Data,Hash,Signature]]
+  def ghostEntries : Seq[EntryT[Address,Data,Hash,Signature]]
+  def reorgEntries : Seq[EntryT[Address,Data,Hash,Signature]]
+  def txns : Seq[EntryT[Address,Data,Hash,Signature]]
   def signature : Signature
 }
 
@@ -39,7 +41,9 @@ case class Evidence[Address,Hash,Signature](
 ) extends EvidenceT[Address,Hash,Signature]
 
 case class Block[Address,Data,Hash,Signature](
-  override val entries : List[EntryT[Address,Data,Hash,Signature]],
+  override val ghostEntries : Seq[EntryT[Address,Data,Hash,Signature]],
+  override val reorgEntries : Seq[EntryT[Address,Data,Hash,Signature]],
+  override val txns : Seq[EntryT[Address,Data,Hash,Signature]],
   override val signature : Signature
 ) extends BlockT[Address,Data,Hash,Signature]
 
@@ -76,3 +80,4 @@ case class Txn[Address,Data,Hash,Signature](
   override val post : Hash
 ) extends TxnT[Address,Data,Hash,Signature]
 
+trait GhostTableT
