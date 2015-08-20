@@ -12,8 +12,8 @@ import scala.collection.mutable.MapProxy
 
 trait AppStateMapT[Address,Data,Hash,Signature,AppState]
  extends MapProxy[Hash,AppState] 
-trait ConsensusManagerStateMapT[Address,Data,Hash,Signature]
- extends MapProxy[Hash,ConsensusManagerStateT[Address,Data,Hash,Signature]] 
+trait ConsensusManagerStateMapT[PrimHash,Address,Data,Hash,Signature]
+ extends MapProxy[PrimHash,ConsensusManagerStateT[Address,Data,Hash,Signature]] 
 
 trait ConsensusManagerStateT[Address,Data,Hash,Signature] {
   def ghostTable : GhostTableT

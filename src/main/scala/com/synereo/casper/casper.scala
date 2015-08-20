@@ -21,7 +21,7 @@ case class Bet(
 trait ConsensusDataT[Address,Hash,Signature]
 trait BlockT[Address,Data,Hash,Signature] extends ConsensusDataT[Address,Hash,Signature] {
   def ghostEntries : Seq[EntryT[Address,Data,Hash,Signature]]
-  def reorgEntries : Seq[EntryT[Address,Data,Hash,Signature]]
+  def reorgEntries : ReorgT[Address,Data,Hash,Signature]
   def txns : Seq[EntryT[Address,Data,Hash,Signature]]
   def signature : Signature
 }
@@ -42,7 +42,7 @@ case class Evidence[Address,Hash,Signature](
 
 case class Block[Address,Data,Hash,Signature](
   override val ghostEntries : Seq[EntryT[Address,Data,Hash,Signature]],
-  override val reorgEntries : Seq[EntryT[Address,Data,Hash,Signature]],
+  override val reorgEntries : ReorgT[Address,Data,Hash,Signature],
   override val txns : Seq[EntryT[Address,Data,Hash,Signature]],
   override val signature : Signature
 ) extends BlockT[Address,Data,Hash,Signature]
@@ -52,9 +52,19 @@ trait EntryT[Address,Data,Hash,Signature] {
   def post : Hash
 }
 
+case class TxnPayLoad[Address,Data,Signature](
+  receiver : Address,
+  data : Data,
+  signature : Signature
+)
+
 trait GhostT[Address,Data,Hash,Signature] extends EntryT[Address,Data,Hash,Signature]
-trait ReorgT[Address,Data,Hash,Signature] extends EntryT[Address,Data,Hash,Signature]
-trait TxnT[Address,Data,Hash,Signature] extends EntryT[Address,Data,Hash,Signature]
+trait ReorgT[Address,Data,Hash,Signature] extends EntryT[Address,Data,Hash,Signature] {
+  def txns : Seq[TxnT[Address,Data,Hash,Signature]]
+}
+trait TxnT[Address,Data,Hash,Signature] extends EntryT[Address,Data,Hash,Signature] {
+  def payload : TxnPayLoad[Address,Data,Signature]
+}
 
 case class Ghost[Address,Data,Hash,Signature](
   override val prev : Hash,
@@ -64,19 +74,13 @@ case class Ghost[Address,Data,Hash,Signature](
 
 case class Reorg[Address,Data,Hash,Signature](
   override val prev : Hash,
-  txn : List[TxnT[Address,Data,Hash,Signature]],
+  override val txns : Seq[TxnT[Address,Data,Hash,Signature]],
   override val post : Hash
 ) extends ReorgT[Address,Data,Hash,Signature]
 
-case class TxnPayLoad[Address,Data,Signature](
-  receiver : Address,
-  data : Data,
-  signature : Signature
-)
-
 case class Txn[Address,Data,Hash,Signature](
   override val prev : Hash,
-  payload : TxnPayLoad[Address,Data,Signature],
+  override val payload : TxnPayLoad[Address,Data,Signature],
   override val post : Hash
 ) extends TxnT[Address,Data,Hash,Signature]
 

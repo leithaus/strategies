@@ -8,13 +8,15 @@
 
 package com.synereo.casper
 
+trait StateFnT[State,Address,Data,Hash,Signature] 
+extends Function2[State,EntryT[Address,Data,Hash,Signature],State]
+
 trait ValidityCheckUtilsT[Address,Data,Hash,Signature,AppState,Timer] {
-  type StateFn[State] = ( State, TxnT[Address,Data,Hash,Signature] ) => State
   def hash[State] : State => Hash
   def validTxn[State](
     state : State,
-    transitionFn : StateFn[State],
-    txn : TxnT[Address,Data,Hash,Signature]
+    transitionFn : StateFnT[State,Address,Data,Hash,Signature],
+    txn : EntryT[Address,Data,Hash,Signature]
   ) : ( Boolean, State ) = {
     val nxtState = transitionFn( state, txn )
     ( 
@@ -23,10 +25,10 @@ trait ValidityCheckUtilsT[Address,Data,Hash,Signature,AppState,Timer] {
     )    
   }
   def loopTest[State](
-    testFn : ( State, StateFn[State], TxnT[Address,Data,Hash,Signature] ) => ( Boolean, State ),
+    testFn : ( State, StateFnT[State,Address,Data,Hash,Signature], EntryT[Address,Data,Hash,Signature] ) => ( Boolean, State ),
     acc : ( Boolean, State ),
-    stateFn : StateFn[State],
-    candidates : Seq[TxnT[Address,Data,Hash,Signature]]
+    stateFn : StateFnT[State,Address,Data,Hash,Signature],
+    candidates : Seq[EntryT[Address,Data,Hash,Signature]]
   ) : ( Boolean, State ) = {
     candidates match {
       case Nil => acc
@@ -42,13 +44,92 @@ trait ValidityCheckUtilsT[Address,Data,Hash,Signature,AppState,Timer] {
       }
     }                                        
   }
+  def initialDifference(
+    txnSeq1 : Seq[TxnT[Address,Data,Hash,Signature]],
+    txnSeq2 : Seq[TxnT[Address,Data,Hash,Signature]]
+  ) : Int = {
+    def loop( index : Int, zipSeq : Seq[( TxnT[Address,Data,Hash,Signature], TxnT[Address,Data,Hash,Signature] )] ) : Int = {
+      zipSeq match {
+        case Nil => index
+        case ( txn1, txn2 ) :: rest => {
+          if ( txn2 != txn2 ) {
+            index
+          }
+          else loop( index + 1, rest )
+        }
+      }
+    }
+    loop( 0, txnSeq1.zip( txnSeq2 ) )
+  }
 }
 
-trait ValidatorT[Address,Data,Hash,Signature,AppState,Timer] {
+trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signature,AppState,Timer]
+  extends ValidityCheckUtilsT[Address,Data,Hash,Signature,AppState,Timer]
+{
   def initConsensusManagerState : ConsensusManagerStateT[Address,Data,Hash,Signature]
   def initAppState : AppState
-  def consensusManagerStateMap : ConsensusManagerStateMapT[Address,Data,Hash,Signature]
-  def appStateMap : AppStateMapT[Address,Data,Hash,Signature,AppState]
+  def consensusManagerStateMap : ConsensusManagerStateMapT[PrimHash,Address,Data,Hash,Signature]
+  def appStateMap : AppStateMapT[Address,Data,PrimHash,Signature,AppState]
   def timer : Timer
-  def valid( block : BlockT[Address,Data,Hash,Signature] ) : Boolean
+  def consensusManagerStateFn : StateFnT[ConsensusManagerStateT[Address,Data,Hash,Signature],Address,Data,Hash,Signature] 
+  def appStateFn : StateFnT[AppState,Address,Data,Hash,Signature] 
+
+  def valid( block : BlockT[Address,Data,Hash,Signature] ) : Boolean = {
+    val ( cmgtSH, appSH ) = ( block.ghostEntries( 1 ).prev );
+    val ( cmgtS, appS ) = ( consensusManagerStateMap( cmgtSH ), appStateMap( appSH ) );
+    val ( initGhostTable, initHistory ) =
+      ( cmgtS.ghostTable, cmgtS.history );
+
+    val ( ghostCond, ghostState ) =
+      loopTest[ConsensusManagerStateT[Address,Data,Hash,Signature]](
+        validTxn[ConsensusManagerStateT[Address,Data,Hash,Signature]],
+        ( true, cmgtS ),
+        consensusManagerStateFn,
+        block.ghostEntries
+      )
+
+    val ( ghostGhostTable, ghostHistory ) =
+      ( ghostState.ghostTable, ghostState.history );
+    val initTxnSeq = initHistory( initGhostTable );
+    val ghostTxnSeq = ghostHistory( ghostGhostTable );    
+    val pos = initialDifference( ghostTxnSeq, initTxnSeq );
+    val reorgGhostTxnSeq = ghostTxnSeq.drop( pos );
+    val reorgInitAppState = appStateMap( ghostTxnSeq( pos - 1 ).post._2 )
+    val reorgValidity =
+      reorgGhostTxnSeq.map( _.payload ) == block.reorgEntries.txns.map( _.payload )
+
+    val ( reorgCmgtCond, reorgCmgtState ) =      
+      loopTest[ConsensusManagerStateT[Address,Data,Hash,Signature]](
+        validTxn[ConsensusManagerStateT[Address,Data,Hash,Signature]],
+        ( true, cmgtS ),
+        consensusManagerStateFn,
+        block.reorgEntries.txns
+      )
+    val ( reorgAppCond, reorgAppState ) =      
+      loopTest[AppState](
+        validTxn[AppState],
+        ( true, reorgInitAppState ),
+        appStateFn,
+        block.reorgEntries.txns
+      )
+    
+    // enforcing ten fee policy of txn fees
+    val ( txnCmgtCond, txnCmgtState ) =      
+      loopTest[ConsensusManagerStateT[Address,Data,Hash,Signature]](
+        validTxn[ConsensusManagerStateT[Address,Data,Hash,Signature]],
+        ( true, cmgtS ),
+        consensusManagerStateFn,
+        block.txns
+      )
+    val ( txnAppCond, txnAppState ) =      
+      loopTest[AppState](
+        validTxn[AppState],
+        ( true, appS ),
+        appStateFn,
+        block.txns
+      )
+    
+    ( ghostCond && reorgValidity && reorgCmgtCond && reorgAppCond && txnCmgtCond && txnAppCond )
+   
+  }
 }
