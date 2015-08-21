@@ -77,8 +77,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
   def valid( block : BlockT[Address,Data,Hash,Signature] ) : Boolean = {
     val ( cmgtSH, appSH ) = ( block.ghostEntries( 1 ).prev );
     val ( cmgtS, appS ) = ( consensusManagerStateMap( cmgtSH ), appStateMap( appSH ) );
-    val ( initGhostTable, initHistory ) =
-      ( cmgtS.ghostTable, cmgtS.history );
+    val ( initGhostTable, initHistory ) = ( cmgtS.ghostTable, cmgtS.history );
 
     val ( ghostCond, ghostState ) =
       loopTest[ConsensusManagerStateT[Address,Data,Hash,Signature]](
@@ -88,48 +87,46 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
         block.ghostEntries
       )
 
-    val ( ghostGhostTable, ghostHistory ) =
-      ( ghostState.ghostTable, ghostState.history );
-    val initTxnSeq = initHistory( initGhostTable );
-    val ghostTxnSeq = ghostHistory( ghostGhostTable );    
-    val pos = initialDifference( ghostTxnSeq, initTxnSeq );
-    val reorgGhostTxnSeq = ghostTxnSeq.drop( pos );
-    val reorgInitAppState = appStateMap( ghostTxnSeq( pos - 1 ).post._2 )
-    val reorgValidity =
-      reorgGhostTxnSeq.map( _.payload ) == block.reorgEntries.txns.map( _.payload )
+    if ( ghostCond ) {
+      val ( ghostGhostTable, ghostHistory ) =
+        ( ghostState.ghostTable, ghostState.history );
+      val initTxnSeq = initHistory( initGhostTable );
+      val ghostTxnSeq = ghostHistory( ghostGhostTable );    
+      val pos = initialDifference( ghostTxnSeq, initTxnSeq );
+      val reorgGhostTxnSeq = ghostTxnSeq.drop( pos );
+      val reorgInitAppState = appStateMap( ghostTxnSeq( pos - 1 ).post._2 )
 
-    val ( reorgCmgtCond, reorgCmgtState ) =      
-      loopTest[ConsensusManagerStateT[Address,Data,Hash,Signature]](
-        validTxn[ConsensusManagerStateT[Address,Data,Hash,Signature]],
-        ( true, cmgtS ),
-        consensusManagerStateFn,
-        block.reorgEntries.txns
+      (
+        // reorg validity check
+        ( reorgGhostTxnSeq.map( _.payload ) == block.reorgEntries.txns.map( _.payload ) ) &&
+        loopTest[ConsensusManagerStateT[Address,Data,Hash,Signature]](
+          validTxn[ConsensusManagerStateT[Address,Data,Hash,Signature]],
+          ( true, cmgtS ),
+          consensusManagerStateFn,
+          block.reorgEntries.txns
+        )._1 && 
+        loopTest[AppState](
+          validTxn[AppState],
+          ( true, reorgInitAppState ),
+          appStateFn,
+          block.reorgEntries.txns
+        )._1 && // fees
+        loopTest[ConsensusManagerStateT[Address,Data,Hash,Signature]](
+          validTxn[ConsensusManagerStateT[Address,Data,Hash,Signature]],
+          ( true, cmgtS ),
+          consensusManagerStateFn,
+          block.txns
+        )._1 &&
+        loopTest[AppState](
+          validTxn[AppState],
+          ( true, appS ),
+          appStateFn,
+          block.txns
+        )._1            
       )
-    val ( reorgAppCond, reorgAppState ) =      
-      loopTest[AppState](
-        validTxn[AppState],
-        ( true, reorgInitAppState ),
-        appStateFn,
-        block.reorgEntries.txns
-      )
-    
-    // enforcing ten fee policy of txn fees
-    val ( txnCmgtCond, txnCmgtState ) =      
-      loopTest[ConsensusManagerStateT[Address,Data,Hash,Signature]](
-        validTxn[ConsensusManagerStateT[Address,Data,Hash,Signature]],
-        ( true, cmgtS ),
-        consensusManagerStateFn,
-        block.txns
-      )
-    val ( txnAppCond, txnAppState ) =      
-      loopTest[AppState](
-        validTxn[AppState],
-        ( true, appS ),
-        appStateFn,
-        block.txns
-      )
-    
-    ( ghostCond && reorgValidity && reorgCmgtCond && reorgAppCond && txnCmgtCond && txnAppCond )
-   
+    }
+    else {
+      false
+    }      
   }
 }
