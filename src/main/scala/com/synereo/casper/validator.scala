@@ -84,20 +84,15 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
     val ( initGhostTable, initHistory ) = ( cmgtS.ghostTable, cmgtS.history );
 
     val ( ghostCond, ghostState ) =
-      loopTest[ConsensusManagerStateT[Address,Data,Hash,Signature]](
-        validTxn[ConsensusManagerStateT[Address,Data,Hash,Signature]],
-        ( true, cmgtS ),
-        consensusManagerStateFn,
-        block.ghostEntries
-      )
+      loopTest( validCmgtTxn, ( true, cmgtS ), consensusManagerStateFn, block.ghostEntries )
 
     (
       ghostCond &&
       {
         val ( ghostGhostTable, ghostHistory ) =
           ( ghostState.ghostTable, ghostState.history );
-        val initTxnSeq = initHistory( initGhostTable );
-        val ghostTxnSeq = ghostHistory( ghostGhostTable );    
+        val ( initTxnSeq, ghostTxnSeq ) =
+          ( initHistory( initGhostTable ), ghostHistory( ghostGhostTable ) ) ;
         val pos = initialDifference( ghostTxnSeq, initTxnSeq );
         val reorgGhostTxnSeq = ghostTxnSeq.drop( pos );
         val reorgInitAppState = appStateMap( ghostTxnSeq( pos - 1 ).post._2 )
