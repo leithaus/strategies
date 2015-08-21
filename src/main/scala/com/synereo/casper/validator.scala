@@ -77,7 +77,6 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
   val validCmgtTxn = validTxn[ConsensusManagerStateT[Address,Data,Hash,Signature]] _
   val validAppTxn = validTxn[AppState] _
         
-
   def valid( block : BlockT[Address,Data,Hash,Signature] ) : Boolean = {
     val ( cmgtSH, appSH ) = ( block.ghostEntries( 1 ).prev );
     val ( cmgtS, appS ) = ( consensusManagerStateMap( cmgtSH ), appStateMap( appSH ) );
