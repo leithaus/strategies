@@ -74,27 +74,9 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
   def consensusManagerStateFn : StateFnT[ConsensusManagerStateT[Address,Data,Hash,Signature],Address,Data,Hash,Signature] 
   def appStateFn : StateFnT[AppState,Address,Data,Hash,Signature] 
 
-  val validCmgtTxn =
-    (
-      state : ConsensusManagerStateT[Address,Data,Hash,Signature],
-      transitionFn : StateFnT[ConsensusManagerStateT[Address,Data,Hash,Signature],Address,Data,Hash,Signature],
-      txn : EntryT[Address,Data,Hash,Signature]
-    ) => {
-      validTxn[ConsensusManagerStateT[Address,Data,Hash,Signature]](
-        state, transitionFn, txn
-      )
-    }
-
-  val validAppTxn = 
-    (
-      state : AppState,
-      transitionFn : StateFnT[AppState,Address,Data,Hash,Signature],
-      txn : EntryT[Address,Data,Hash,Signature]
-    ) => {
-      validTxn[AppState](
-        state, transitionFn, txn
-      )
-    }
+  val validCmgtTxn = validTxn[ConsensusManagerStateT[Address,Data,Hash,Signature]] _
+  val validAppTxn = validTxn[AppState] _
+        
 
   def valid( block : BlockT[Address,Data,Hash,Signature] ) : Boolean = {
     val ( cmgtSH, appSH ) = ( block.ghostEntries( 1 ).prev );
@@ -120,8 +102,6 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
         val reorgGhostTxnSeq = ghostTxnSeq.drop( pos );
         val reorgInitAppState = appStateMap( ghostTxnSeq( pos - 1 ).post._2 )
         
-        val validCmgtTxn = validTxn[ConsensusManagerStateT[Address,Data,Hash,Signature]] _
-        val validAppTxn = validTxn[AppState] _
         (
           // reorg validity check
           ( reorgGhostTxnSeq.map( _.payload ) == block.reorgEntries.txns.map( _.payload ) ) &&
