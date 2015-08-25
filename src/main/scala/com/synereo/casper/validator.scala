@@ -71,7 +71,14 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
   def consensusManagerStateMap : ConsensusManagerStateMapT[PrimHash,Address,Data,Hash,Signature]
   def appStateMap : AppStateMapT[Address,Data,PrimHash,Signature,AppState]
   def timer : Timer
-  def consensusManagerStateFn : StateFnT[ConsensusManagerStateT[Address,Data,Hash,Signature],Address,Data,Hash,Signature] 
+  def consensusManagerStateFn : StateFnT[ConsensusManagerStateT[Address,Data,Hash,Signature],Address,Data,Hash,Signature]
+  = new StateFnT[ConsensusManagerStateT[Address,Data,Hash,Signature],Address,Data,Hash,Signature]
+  {
+    def apply(
+      v1 : ConsensusManagerStateT[Address,Data,Hash,Signature],
+      v2 : EntryT[Address,Data,Hash,Signature]
+    ) : ConsensusManagerStateT[Address,Data,Hash,Signature] = throw new Exception( "tbd" )
+  }
   def appStateFn : StateFnT[AppState,Address,Data,Hash,Signature] 
 
   val validCmgtTxn = validTxn[ConsensusManagerStateT[Address,Data,Hash,Signature]] _

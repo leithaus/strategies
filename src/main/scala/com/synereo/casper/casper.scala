@@ -8,6 +8,9 @@
 
 package com.synereo.casper
 
+import scala.collection.mutable.Map
+import scala.collection.mutable.MapProxy
+
 trait BetT {
   def round : Int
   def prob : Double
@@ -84,4 +87,5 @@ case class Txn[Address,Data,Hash,Signature](
   override val post : Hash
 ) extends TxnT[Address,Data,Hash,Signature]
 
-trait GhostTableT
+trait GhostTableT[Address,Data,Hash,Signature]
+extends MapProxy[Int,Seq[Map[BlockT[Address,Data,Hash,Signature],( Double, Address )]]]
