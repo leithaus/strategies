@@ -98,11 +98,20 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
         
         (
           // reorg validity check
+          block.reorgEntries.txns( 0 ).prev._2 == hash( reorgInitAppState ) &&
           ( reorgGhostTxnSeq.map( _.payload ) == block.reorgEntries.txns.map( _.payload ) ) &&
-          loopTest( validCmgtTxn, ( true, cmgtS ), consensusManagerStateFn, block.reorgEntries.txns )._1 && 
-          loopTest( validAppTxn, ( true, reorgInitAppState ), appStateFn, block.reorgEntries.txns )._1 && 
-          loopTest( validCmgtTxn, ( true, cmgtS ), consensusManagerStateFn, block.txns )._1 && // fees
-          loopTest( validAppTxn, ( true, appS ), appStateFn, block.txns )._1            
+          {
+            val ( cmgtCond, cmgtState ) =
+              loopTest( validCmgtTxn, ( true, ghostState ), consensusManagerStateFn, block.reorgEntries.txns )
+            cmgtCond && 
+            {
+              val ( appCond, appState ) =
+                loopTest( validAppTxn, ( true, reorgInitAppState ), appStateFn, block.reorgEntries.txns ) 
+              appCond &&
+              loopTest( validCmgtTxn, ( true, cmgtState ), consensusManagerStateFn, block.txns )._1 && // fees
+              loopTest( validAppTxn, ( true, appState ), appStateFn, block.txns )._1            
+            }
+          }
         )
       }
     )      
