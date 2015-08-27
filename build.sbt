@@ -39,6 +39,8 @@ libraryDependencies ++= Seq(
   "cup" % "java-cup-11a" % "local",
   "cup" % "java-cup-11a-runtime" % "local",
   "com.rabbitmq" % "amqp-client" % "3.5.3",      
+  "org.codehaus.jettison" % "jettison" % "1.3",
+  //"com.thoughtworks.xstream" % "xstream" % "1.4.4",
   "com.thoughtworks.xstream" % "xstream" % "1.4.4",
   "com.typesafe" % "config" % "1.0.0",
   "ch.qos.logback" % "logback-classic" % "0.9.26",      
