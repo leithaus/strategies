@@ -33,7 +33,7 @@ object Main extends App {
     implicit session =>
       logger.info(s"There are ${users.count.run} users in the database")
       val emailToFind = s"example${random.nextInt(MaxUserCount)}@example.com"
-      logger.info(s"User with email '$emailToFind' has registered at: ${users.findByEmail(emailToFind).list().headOption.map(_.registredAt).getOrElse("Not yet")}")
+      //logger.info(s"User with email '$emailToFind' has registered at: ${users.findByEmail(emailToFind).list().headOption.map(_.registredAt).getOrElse("Not yet")}")
   }
 
   db withTransaction {

@@ -12,7 +12,11 @@ libraryDependencies ++= Seq(
   /* Database access related dependencies */
   "com.h2database" % "h2" % "1.4.177",
   "com.typesafe.slick" %% "slick" % "2.0.1",
+  //"com.typesafe.slick" %% "slick" % "3.0.2",
+  "com.typesafe.slick" %% "slick-testkit" % "2.0.1",
+  //"com.typesafe.slick" %% "slick-testkit" % "3.0.2",
   "com.github.tototoshi" %% "slick-joda-mapper" % "1.0.1",
+  //"com.github.tototoshi" %% "slick-joda-mapper" % "2.0.0",
   "com.jolbox" % "bonecp" % "0.8.0.RELEASE",
   /* Logging */
   "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2",
