@@ -25,8 +25,8 @@ case class Bet[Hash](
   override val prob : Double
 ) extends BetT[Hash]
 
-trait ConsensusDataT[Address,Hash,Signature]
-trait BlockT[Address,Data,Hash,Signature] extends ConsensusDataT[Address,Hash,Signature] {
+trait ConsensusDataT[Address,Data,Hash,Signature]
+trait BlockT[Address,Data,Hash,Signature] extends ConsensusDataT[Address,Data,Hash,Signature] {
   def height : Int
   def timeStamp : Date
   def ghostEntries : Seq[EntryT[Address,Data,Hash,Signature]]
@@ -35,19 +35,19 @@ trait BlockT[Address,Data,Hash,Signature] extends ConsensusDataT[Address,Hash,Si
   def signature : Signature
 }
 
-trait ValidationT[Address,Hash,Signature] extends ConsensusDataT[Address,Hash,Signature]
+trait ValidationT[Address,Data,Hash,Signature] extends ConsensusDataT[Address,Data,Hash,Signature]
 
-case class Validation[Address,Hash,Signature](
+case class Validation[Address,Data,Hash,Signature](
   bets : List[Bet[Hash]],
   signature : Signature
-) extends ValidationT[Address,Hash,Signature]
+) extends ValidationT[Address,Data,Hash,Signature]
  
-trait EvidenceT[Address,Hash,Signature] extends ConsensusDataT[Address,Hash,Signature]
+trait EvidenceT[Address,Data,Hash,Signature] extends ConsensusDataT[Address,Data,Hash,Signature]
 
-case class Evidence[Address,Hash,Signature](
+case class Evidence[Address,Data,Hash,Signature](
   address : Address,
-  validations : List[ValidationT[Address,Hash,Signature]]
-) extends EvidenceT[Address,Hash,Signature]
+  validations : List[ValidationT[Address,Data,Hash,Signature]]
+) extends EvidenceT[Address,Data,Hash,Signature]
 
 case class Block[Address,Data,Hash,Signature](
   override val height : Int,
@@ -79,7 +79,7 @@ trait TxnT[Address,Data,Hash,Signature] extends EntryT[Address,Data,Hash,Signatu
 
 case class Ghost[Address,Data,Hash,Signature](
   override val prev : Hash,
-  consensusData : ConsensusDataT[Address,Hash,Signature],
+  consensusData : ConsensusDataT[Address,Data,Hash,Signature],
   override val post : Hash
 ) extends GhostT[Address,Data,Hash,Signature]
 

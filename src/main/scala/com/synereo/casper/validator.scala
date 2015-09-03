@@ -8,6 +8,9 @@
 
 package com.synereo.casper
 
+import scala.collection.mutable.HashMap
+import scala.collection.mutable.Map
+
 trait StateFnT[State,Address,Data,Hash,Signature] 
 extends Function2[State,( EntryT[Address,Data,Hash,Signature], Int ),State]
 
@@ -26,10 +29,10 @@ trait ValidityCheckUtilsT[Address,Data,Hash,Signature,AppState,Timer] {
     )    
   }
   def loopTest[State](
-    testFn : ( State, StateFnT[State,Address,Data,Hash,Signature], EntryT[Address,Data,Hash,Signature] ) => ( Boolean, State ),
+    testFn : ( State, StateFnT[State,Address,Data,Hash,Signature], ( EntryT[Address,Data,Hash,Signature], Int ) ) => ( Boolean, State ),
     acc : ( Boolean, State ),
     stateFn : StateFnT[State,Address,Data,Hash,Signature],
-    candidates : Seq[EntryT[Address,Data,Hash,Signature]]
+    candidates : Seq[(EntryT[Address,Data,Hash,Signature],Int)]
   ) : ( Boolean, State ) = {
     candidates match {
       case Nil => acc
@@ -83,7 +86,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
       state : ConsensusManagerStateT[Address,Data,Hash,Signature],
       txnNHeight : ( EntryT[Address,Data,Hash,Signature], Int )
     ) : ConsensusManagerStateT[Address,Data,Hash,Signature] = {
-      val ( txn, height ) = txnNHeight
+      val ( txn : EntryT[Address,Data,Hash,Signature], height ) = txnNHeight
       txn match {
         case Ghost( _, cd, _ ) => {
           cd match {
@@ -92,7 +95,10 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
               ( blockValidityRecord.get( hash( blk ) ), ( h < height ) ) match {
                 case ( Some( true ), true ) => {
                   val nGT = 
-                    state.ghostTable + ( h -> ( List( ( blk, Nil ) ) ++ state.ghostTable.getOrElse( h, Nil ) ) ).asInstanceOf[GhostTableT[Address,Data,Hash,Signature]]
+                    (
+		      state.ghostTable
+		      + ( h -> ( List( ( blk, Nil ) ) ++ state.ghostTable.getOrElse( h, Nil ) ) )
+		    ).asInstanceOf[GhostTableT[Address,Data,Hash,Signature]]
                   ConsensusManagerState(
                     nGT,
                     state.history,
@@ -102,10 +108,13 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
                 }
                 case ( None, true ) => {
                   val validBlkp = valid( blk )
-                  blockValidityRecord += ( hask( blk ) -> validBlkp )
+                  blockValidityRecord += ( hash( blk ) -> validBlkp )
                   if ( validBlkp ) {
                     val nGT = 
-                      state.ghostTable + ( h -> ( List( ( blk, Nil ) ) ++ state.ghostTable.getOrElse( h, Nil ) ) ).asInstanceOf[GhostTableT[Address,Data,Hash,Signature]]
+                      (
+			state.ghostTable
+			+ ( h -> ( List( ( blk, Nil ) ) ++ state.ghostTable.getOrElse( h, Nil ) ) )
+		      ).asInstanceOf[GhostTableT[Address,Data,Hash,Signature]]
                     ConsensusManagerState(
                       nGT,
                       state.history,
@@ -163,7 +172,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 
     try {
       val ( ghostCond, ghostState ) =
-        loopTest(
+        loopTest[ConsensusManagerStateT[Address,Data,Hash,Signature]](
           validCmgtTxn,
           ( true, cmgtS ),
           consensusManagerStateFn,
@@ -196,7 +205,12 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
               cmgtCond && 
               {
                 val ( appCond, appState ) =
-                  loopTest( validAppTxn, ( true, reorgInitAppState ), appStateFn, block.reorgEntries.txns ) 
+                  loopTest(
+		    validAppTxn,
+		    ( true, reorgInitAppState ),
+		    appStateFn,
+		    block.reorgEntries.txns.map( ( e ) => ( e, block.height ) )
+		  ) 
                 appCond &&
                 loopTest(
                   validCmgtTxn,
@@ -204,7 +218,12 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
                   consensusManagerStateFn,
                   block.txns.map( ( e ) => ( e, block.height ) )
                 )._1 && // fees
-                loopTest( validAppTxn, ( true, appState ), appStateFn, block.txns )._1            
+                loopTest(
+		  validAppTxn,
+		  ( true, appState ),
+		  appStateFn,
+		  block.txns.map( ( e ) => ( e, block.height ) )
+		)._1            
               }
             }
           )
