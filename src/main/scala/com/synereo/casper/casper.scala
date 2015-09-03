@@ -11,18 +11,24 @@ package com.synereo.casper
 import scala.collection.mutable.Map
 import scala.collection.mutable.MapProxy
 
-trait BetT {
-  def round : Int
+import java.util.Date
+
+trait BetT[Hash] {
+  def height : Int
+  def blockHash : Hash
   def prob : Double
 }
 
-case class Bet(
-  override val round : Int,
+case class Bet[Hash](
+  override val height : Int,
+  override val blockHash : Hash,
   override val prob : Double
-) extends BetT
+) extends BetT[Hash]
 
 trait ConsensusDataT[Address,Hash,Signature]
 trait BlockT[Address,Data,Hash,Signature] extends ConsensusDataT[Address,Hash,Signature] {
+  def height : Int
+  def timeStamp : Date
   def ghostEntries : Seq[EntryT[Address,Data,Hash,Signature]]
   def reorgEntries : ReorgT[Address,Data,Hash,Signature]
   def txns : Seq[EntryT[Address,Data,Hash,Signature]]
@@ -32,7 +38,7 @@ trait BlockT[Address,Data,Hash,Signature] extends ConsensusDataT[Address,Hash,Si
 trait ValidationT[Address,Hash,Signature] extends ConsensusDataT[Address,Hash,Signature]
 
 case class Validation[Address,Hash,Signature](
-  bets : List[Bet],
+  bets : List[Bet[Hash]],
   signature : Signature
 ) extends ValidationT[Address,Hash,Signature]
  
@@ -44,6 +50,8 @@ case class Evidence[Address,Hash,Signature](
 ) extends EvidenceT[Address,Hash,Signature]
 
 case class Block[Address,Data,Hash,Signature](
+  override val height : Int,
+  override val timeStamp : Date,
   override val ghostEntries : Seq[EntryT[Address,Data,Hash,Signature]],
   override val reorgEntries : ReorgT[Address,Data,Hash,Signature],
   override val txns : Seq[EntryT[Address,Data,Hash,Signature]],
@@ -88,4 +96,4 @@ case class Txn[Address,Data,Hash,Signature](
 ) extends TxnT[Address,Data,Hash,Signature]
 
 trait GhostTableT[Address,Data,Hash,Signature]
-extends MapProxy[Int,Seq[Map[BlockT[Address,Data,Hash,Signature],( Double, Address )]]]
+extends MapProxy[Int,Seq[( BlockT[Address,Data,Hash,Signature],Seq[( Double, Address )] )]]

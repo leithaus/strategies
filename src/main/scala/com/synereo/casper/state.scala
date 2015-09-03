@@ -19,5 +19,12 @@ trait ConsensusManagerStateT[Address,Data,Hash,Signature] {
   def ghostTable : GhostTableT[Address,Data,Hash,Signature]
   def history : GhostTableT[Address,Data,Hash,Signature] => Seq[TxnT[Address,Data,Hash,Signature]]
   def bondedValidators : Seq[Address]
-  def evidenceChecker : BlockT[Address,Data,Hash,Signature] => Boolean
+  def evidenceChecker : Seq[ConsensusDataT[Address,Hash,Signature]] => Option[Address]
 }
+
+case class ConsensusManagerState[Address,Data,Hash,Signature](
+  override val ghostTable : GhostTableT[Address,Data,Hash,Signature],
+  override val history : GhostTableT[Address,Data,Hash,Signature] => Seq[TxnT[Address,Data,Hash,Signature]],
+  override val bondedValidators : Seq[Address],
+  override val evidenceChecker : Seq[ConsensusDataT[Address,Hash,Signature]] => Option[Address]
+) extends ConsensusManagerStateT[Address,Data,Hash,Signature]
