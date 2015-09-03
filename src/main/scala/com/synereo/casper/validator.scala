@@ -103,12 +103,14 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
                     nGT,
                     state.history,
                     state.bondedValidators,
-                    state.evidenceChecker
+                    state.evidenceChecker,
+		    state.blockHashMap
                   )
                 }
                 case ( None, true ) => {
                   val validBlkp = valid( blk )
                   blockValidityRecord += ( hash( blk ) -> validBlkp )
+		  state.blockHashMap += ( hash( blk ) -> blk )
                   if ( validBlkp ) {
                     val nGT = 
                       (
@@ -119,7 +121,8 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
                       nGT,
                       state.history,
                       state.bondedValidators,
-                      state.evidenceChecker
+                      state.evidenceChecker,
+		      state.blockHashMap
                     )
                   }  
                   else {
@@ -138,7 +141,8 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
                     state.ghostTable,
                     state.history,
                     state.bondedValidators.diff( List( addr ) ),
-                    state.evidenceChecker
+                    state.evidenceChecker,
+		    state.blockHashMap
                   )
                 }
                 case None => {
@@ -146,8 +150,61 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
                 }
               }          
             }
-            case Validation( _, _ ) => {
-              throw new Exception( "tbd" )
+            case Validation( bets, _ ) => {
+              //throw new Exception( "tbd" )
+	      val newGhostTable = 
+		( state.ghostTable /: bets )(
+		  {
+		    ( acc, e ) => {
+		      e match {
+			// BUGBUG : lgm -- round number collisions
+			// means validator equivocation which is
+			// treated as evidence
+			case bet@Bet( betHeight, blkhash, round, prob, _ ) => {
+			  if ( betHeight < height ) {
+			    val newBetMap =
+			      state.blockHashMap.get( blkhash ) match {
+				// BUGBUG : lgm -- if block is in
+				// blockHashMap then it should be in
+				// ghostTable. This is an invariant
+				// that we wish to maintain / check.
+				case Some( blk ) => {
+				  acc.get( betHeight ) match {
+				    case Some( blkBetMap ) => {
+				      blkBetMap + ( blk -> ( blkBetMap.getOrElse( blk, Nil ) ++ List( bet ) ) )
+				    }
+				    case None => {
+				      (
+					new HashMap[BlockT[Address,Data,Hash,Signature],Seq[Bet[Hash]]]()
+					+ ( blk -> List( bet ) )
+				      )
+				    }
+				  }	    
+				}
+				case None => {
+				  throw new InvalidBlockException( txnNHeight )
+				}
+			      }
+			    (
+			      acc
+			      + ( betHeight -> newBetMap )
+			    ).asInstanceOf[GhostTableT[Address,Data,Hash,Signature]]
+			  }
+			  else {
+			    throw new InvalidBlockException( txnNHeight )
+			  }
+			}
+		      }
+		    }
+		  }
+		)
+	      ConsensusManagerState(
+                newGhostTable,
+                state.history,
+                state.bondedValidators,
+                state.evidenceChecker,
+		state.blockHashMap
+              )
             }
             case _ => {
               throw new Exception( "tbd" )

@@ -16,13 +16,17 @@ import java.util.Date
 trait BetT[Hash] {
   def height : Int
   def blockHash : Hash
-  def prob : Double
+  def round : Int  
+  def prob : Double 
+  def timestamp : Date
 }
 
 case class Bet[Hash](
   override val height : Int,
   override val blockHash : Hash,
-  override val prob : Double
+  override val round : Int,
+  override val prob : Double,
+  override val timestamp : Date
 ) extends BetT[Hash]
 
 trait ConsensusDataT[Address,Data,Hash,Signature]
@@ -96,4 +100,4 @@ case class Txn[Address,Data,Hash,Signature](
 ) extends TxnT[Address,Data,Hash,Signature]
 
 trait GhostTableT[Address,Data,Hash,Signature]
-extends MapProxy[Int,Seq[( BlockT[Address,Data,Hash,Signature],Seq[( Double, Address )] )]]
+extends MapProxy[Int,Map[BlockT[Address,Data,Hash,Signature],Seq[Bet[Hash]]]]
