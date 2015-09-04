@@ -83,7 +83,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
     blkMap : Map[BlockT[Address,Data,Hash,Signature],Seq[Bet[Address,Hash]]]
   ) : Option[Block[Address,Data,Hash,Signature]]
   
-  def isFinalized(
+  def isBlockFinal(
     cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature],
     height : Int
   ) : Boolean = {    
@@ -92,14 +92,14 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 	betMap <- cmgtState.ghostTable.get( height );
 	blk <- winner( betMap )
       ) yield {
-	isFinalized( cmgtState, betMap( blk ) )
+	isBlockFinal( cmgtState, betMap( blk ) )
       }
     finalized match {
       case Some( true ) => true
       case _ => false
     }
   }
-  def isFinalized(
+  def isBlockFinal(
     cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature],
     bets : Seq[Bet[Address,Hash]]
   ) : Boolean = {
@@ -288,43 +288,53 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 	    ( state /: ( 0 to ( ( height - 1  ) - state.lastStoredHeight ) ) )(
 	      {
 		( acc, e ) => {
-		  state.ghostTable.get( lsh + e ) match {
+		  val currHeight = lsh + e
+		  state.ghostTable.get( currHeight ) match {
 		    case Some( map ) => {
 		      winner( map ) match {
-			case Some( blk ) => {
-			  val newRevAtH = 
-			    ( acc.revenues.getOrElse( lsh + e, 0 ) /: blk.txns.map( _.fee ) )( _ + _ )
-			  val newRev = acc.revenues + ( ( lsh + e ) -> newRevAtH )
-			  val newBal =
-			    ( acc.balances /: blk.txns )(
-			      {
-				( balAcc, blkTxn ) => {
-				  balAcc.get( blkTxn.sender ) match {
-				    case Some( balance ) => {
-				      val balMinFee = ( balance - blkTxn.fee );
-				      if ( balMinFee >= 0 ) {
-					balAcc + ( ( blkTxn.sender ) -> balMinFee )
+			case Some( blk ) => {			  
+			  val blkRevenues =
+			    acc.revenues.get( currHeight )
+			  ( isBlockFinal( state, currHeight ), blkRevenues ) match {
+			    case ( true, None ) => {
+			      val newRevAtH = 
+				( 0 /: blk.txns.map( _.fee ) )( _ + _ )
+			      val newRev = acc.revenues + ( ( lsh + e ) -> newRevAtH )
+			      val newBal =
+				( acc.balances /: blk.txns )(
+				  {
+				    ( balAcc, blkTxn ) => {
+				      balAcc.get( blkTxn.sender ) match {
+					case Some( balance ) => {
+					  val balMinFee = ( balance - blkTxn.fee );
+					  if ( balMinFee >= 0 ) {
+					    balAcc + ( ( blkTxn.sender ) -> balMinFee )
+					  }
+					  else { balAcc }
+					}
+					case None => { balAcc }
 				      }
-				      else { balAcc }
 				    }
-				    case None => { balAcc }
 				  }
-				}
-			      }
-			    )
-			  ConsensusManagerState(
-			    acc.ghostTable,
-			    acc.ghostDepth,
-			    acc.history,
-			    acc.bondedValidators,
-			    acc.minimumBond,
-			    acc.finalityThreshold,
-			    acc.evidenceChecker,
-			    acc.blockHashMap,			    
-			    newBal,
-			    newRev,
-			    lsh
-			  )  
+				)
+			      ConsensusManagerState(
+				acc.ghostTable,
+				acc.ghostDepth,
+				acc.history,
+				acc.bondedValidators,
+				acc.minimumBond,
+				acc.finalityThreshold,
+				acc.evidenceChecker,
+				acc.blockHashMap,	    
+				newBal,
+				newRev,
+				lsh
+			      )
+			    }
+			    case _ => {
+			      acc
+			    }
+			  }
 			}
 			case None => {
 			  throw new InvalidBlockException( txnNHeight )
