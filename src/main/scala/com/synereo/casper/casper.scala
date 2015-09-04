@@ -13,7 +13,8 @@ import scala.collection.mutable.MapProxy
 
 import java.util.Date
 
-trait BetT[Hash] {
+trait BetT[Address,Hash] {
+  def validator : Address
   def height : Int
   def blockHash : Hash
   def round : Int  
@@ -21,28 +22,30 @@ trait BetT[Hash] {
   def timestamp : Date
 }
 
-case class Bet[Hash](
+case class Bet[Address,Hash](
+  override val validator : Address,
   override val height : Int,
   override val blockHash : Hash,
   override val round : Int,
   override val prob : Double,
   override val timestamp : Date
-) extends BetT[Hash]
+) extends BetT[Address,Hash]
 
 trait ConsensusDataT[Address,Data,Hash,Signature]
 trait BlockT[Address,Data,Hash,Signature] extends ConsensusDataT[Address,Data,Hash,Signature] {
   def height : Int
   def timeStamp : Date
   def ghostEntries : Seq[EntryT[Address,Data,Hash,Signature]]
+  def feeDistribution : Option[FeeDistributionT[Address,Data,Hash,Signature]]
   def reorgEntries : ReorgT[Address,Data,Hash,Signature]
-  def txns : Seq[EntryT[Address,Data,Hash,Signature]]
+  def txns : Seq[TxnT[Address,Data,Hash,Signature]]
   def signature : Signature
 }
 
 trait ValidationT[Address,Data,Hash,Signature] extends ConsensusDataT[Address,Data,Hash,Signature]
 
 case class Validation[Address,Data,Hash,Signature](
-  bets : List[Bet[Hash]],
+  bets : List[Bet[Address,Hash]],
   signature : Signature
 ) extends ValidationT[Address,Data,Hash,Signature]
  
@@ -57,8 +60,9 @@ case class Block[Address,Data,Hash,Signature](
   override val height : Int,
   override val timeStamp : Date,
   override val ghostEntries : Seq[EntryT[Address,Data,Hash,Signature]],
+  override val feeDistribution : Option[FeeDistributionT[Address,Data,Hash,Signature]],
   override val reorgEntries : ReorgT[Address,Data,Hash,Signature],
-  override val txns : Seq[EntryT[Address,Data,Hash,Signature]],
+  override val txns : Seq[TxnT[Address,Data,Hash,Signature]],
   override val signature : Signature
 ) extends BlockT[Address,Data,Hash,Signature]
 
@@ -73,12 +77,18 @@ case class TxnPayLoad[Address,Data,Signature](
   signature : Signature
 )
 
+trait PaidServiceT {
+  def fee : Int
+}
 trait GhostT[Address,Data,Hash,Signature] extends EntryT[Address,Data,Hash,Signature]
-trait ReorgT[Address,Data,Hash,Signature] extends EntryT[Address,Data,Hash,Signature] {
+trait ReorgT[Address,Data,Hash,Signature]
+     extends EntryT[Address,Data,Hash,Signature] with PaidServiceT {
   def txns : Seq[TxnT[Address,Data,Hash,Signature]]
 }
-trait TxnT[Address,Data,Hash,Signature] extends EntryT[Address,Data,Hash,Signature] {
-  def payload : TxnPayLoad[Address,Data,Signature]
+trait TxnT[Address,Data,Hash,Signature]
+     extends EntryT[Address,Data,Hash,Signature] with PaidServiceT {
+       def payload : TxnPayLoad[Address,Data,Signature]
+       def sender : Address
 }
 
 case class Ghost[Address,Data,Hash,Signature](
@@ -90,14 +100,26 @@ case class Ghost[Address,Data,Hash,Signature](
 case class Reorg[Address,Data,Hash,Signature](
   override val prev : Hash,
   override val txns : Seq[TxnT[Address,Data,Hash,Signature]],
+  override val fee : Int,
   override val post : Hash
 ) extends ReorgT[Address,Data,Hash,Signature]
 
 case class Txn[Address,Data,Hash,Signature](
   override val prev : Hash,
   override val payload : TxnPayLoad[Address,Data,Signature],
+  override val sender : Address,
+  override val fee : Int,
   override val post : Hash
-) extends TxnT[Address,Data,Hash,Signature]
+) extends TxnT[Address,Data,Hash,Signature] 
+
+trait FeeDistributionT[Address,Data,Hash,Signature]
+     extends EntryT[Address,Data,Hash,Signature] {
+} 
+
+case class FeeDistribution[Address,Data,Hash,Signature](
+  override val prev : Hash,
+  override val post : Hash
+) extends FeeDistributionT[Address,Data,Hash,Signature]
 
 trait GhostTableT[Address,Data,Hash,Signature]
-extends MapProxy[Int,Map[BlockT[Address,Data,Hash,Signature],Seq[Bet[Hash]]]]
+extends MapProxy[Int,Map[BlockT[Address,Data,Hash,Signature],Seq[Bet[Address,Hash]]]]

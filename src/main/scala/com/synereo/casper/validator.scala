@@ -79,6 +79,52 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
   def appStateMap : AppStateMapT[Address,Data,PrimHash,Signature,AppState]
   def timer : Timer
   def blockValidityRecord : Map[Hash,Boolean]
+  def winner(
+    blkMap : Map[BlockT[Address,Data,Hash,Signature],Seq[Bet[Address,Hash]]]
+  ) : Option[Block[Address,Data,Hash,Signature]]
+  
+  def isFinalized(
+    cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature],
+    height : Int
+  ) : Boolean = {    
+    val finalized =
+      for( 
+	betMap <- cmgtState.ghostTable.get( height );
+	blk <- winner( betMap )
+      ) yield {
+	isFinalized( cmgtState, betMap( blk ) )
+      }
+    finalized match {
+      case Some( true ) => true
+      case _ => false
+    }
+  }
+  def isFinalized(
+    cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature],
+    bets : Seq[Bet[Address,Hash]]
+  ) : Boolean = {
+    val totalBonds = 
+      ( 0 /: cmgtState.bondedValidators )( ( acc, vbpair ) => { acc + vbpair._2 } )
+    val committedBonds =
+      ( 0 /: bets )(
+	{
+	  ( acc, bet ) => {
+	    if ( bet.prob > .9999 ) {
+	      cmgtState.bondedValidators.get( bet.validator ) match {
+		case Some( bond ) => {
+		  acc + bond
+		}
+		case None => {
+		  throw new Exception( "unbonded validator : " + bet.validator )
+		}
+	      }
+	    }
+	    else { acc }
+	  }
+	}
+      )
+    ( ( committedBonds / totalBonds ) >= cmgtState.finalityThreshold )
+  }
   def consensusManagerStateFn : StateFnT[ConsensusManagerStateT[Address,Data,Hash,Signature],Address,Data,Hash,Signature]
   = new StateFnT[ConsensusManagerStateT[Address,Data,Hash,Signature],Address,Data,Hash,Signature]
   {
@@ -90,7 +136,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
       txn match {
         case Ghost( _, cd, _ ) => {
           cd match {
-            case blk@Block( h, _, _, _, _, _ ) => {
+            case blk@Block( h, _, _, _, _, _, _ ) => {
               //throw new Exception( "tbd" )
               ( blockValidityRecord.get( hash( blk ) ), ( h < height ) ) match {
                 case ( Some( true ), true ) => {
@@ -101,10 +147,16 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		    ).asInstanceOf[GhostTableT[Address,Data,Hash,Signature]]
                   ConsensusManagerState(
                     nGT,
+		    state.ghostDepth,
                     state.history,
                     state.bondedValidators,
+		    state.minimumBond,
+		    state.finalityThreshold,
                     state.evidenceChecker,
-		    state.blockHashMap
+		    state.blockHashMap,
+		    state.balances,
+		    state.revenues,
+		    state.lastStoredHeight
                   )
                 }
                 case ( None, true ) => {
@@ -119,10 +171,16 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		      ).asInstanceOf[GhostTableT[Address,Data,Hash,Signature]]
                     ConsensusManagerState(
                       nGT,
+		      state.ghostDepth,
                       state.history,
                       state.bondedValidators,
+		      state.minimumBond,
+		      state.finalityThreshold,
                       state.evidenceChecker,
-		      state.blockHashMap
+		      state.blockHashMap,
+		      state.balances,
+		      state.revenues,
+		      state.lastStoredHeight
                     )
                   }  
                   else {
@@ -139,10 +197,16 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
                 case Some( addr ) => {
                   ConsensusManagerState(
                     state.ghostTable,
+		    state.ghostDepth,
                     state.history,
-                    state.bondedValidators.diff( List( addr ) ),
+                    ( state.bondedValidators - addr ),
+		    state.minimumBond,
+		    state.finalityThreshold,
                     state.evidenceChecker,
-		    state.blockHashMap
+		    state.blockHashMap,
+		    state.balances,
+		    state.revenues,
+		    state.lastStoredHeight
                   )
                 }
                 case None => {
@@ -160,7 +224,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 			// BUGBUG : lgm -- round number collisions
 			// means validator equivocation which is
 			// treated as evidence
-			case bet@Bet( betHeight, blkhash, round, prob, _ ) => {
+			case bet@Bet( _, betHeight, blkhash, round, prob, _ ) => {
 			  if ( betHeight < height ) {
 			    val newBetMap =
 			      state.blockHashMap.get( blkhash ) match {
@@ -175,7 +239,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 				    }
 				    case None => {
 				      (
-					new HashMap[BlockT[Address,Data,Hash,Signature],Seq[Bet[Hash]]]()
+					new HashMap[BlockT[Address,Data,Hash,Signature],Seq[Bet[Address,Hash]]]()
 					+ ( blk -> List( bet ) )
 				      )
 				    }
@@ -200,10 +264,16 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		)
 	      ConsensusManagerState(
                 newGhostTable,
+		state.ghostDepth,		
                 state.history,
                 state.bondedValidators,
+		state.minimumBond,
+		state.finalityThreshold,
                 state.evidenceChecker,
-		state.blockHashMap
+		state.blockHashMap,
+		state.balances,
+		state.revenues,
+		state.lastStoredHeight
               )
             }
             case _ => {
@@ -211,6 +281,68 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
             }
           }
         }
+	case FeeDistribution( prev, post ) => {
+	  val ( cmgtHash, _ ) = prev
+	  if ( hash( state ) == cmgtHash ) {
+	    val lsh = state.lastStoredHeight
+	    ( state /: ( 0 to ( ( height - 1  ) - state.lastStoredHeight ) ) )(
+	      {
+		( acc, e ) => {
+		  state.ghostTable.get( lsh + e ) match {
+		    case Some( map ) => {
+		      winner( map ) match {
+			case Some( blk ) => {
+			  val newRevAtH = 
+			    ( acc.revenues.getOrElse( lsh + e, 0 ) /: blk.txns.map( _.fee ) )( _ + _ )
+			  val newRev = acc.revenues + ( ( lsh + e ) -> newRevAtH )
+			  val newBal =
+			    ( acc.balances /: blk.txns )(
+			      {
+				( balAcc, blkTxn ) => {
+				  balAcc.get( blkTxn.sender ) match {
+				    case Some( balance ) => {
+				      val balMinFee = ( balance - blkTxn.fee );
+				      if ( balMinFee >= 0 ) {
+					balAcc + ( ( blkTxn.sender ) -> balMinFee )
+				      }
+				      else { balAcc }
+				    }
+				    case None => { balAcc }
+				  }
+				}
+			      }
+			    )
+			  ConsensusManagerState(
+			    acc.ghostTable,
+			    acc.ghostDepth,
+			    acc.history,
+			    acc.bondedValidators,
+			    acc.minimumBond,
+			    acc.finalityThreshold,
+			    acc.evidenceChecker,
+			    acc.blockHashMap,			    
+			    newBal,
+			    newRev,
+			    lsh
+			  )  
+			}
+			case None => {
+			  throw new InvalidBlockException( txnNHeight )
+			}
+		      }
+		    }
+		    case None => {
+		      throw new InvalidBlockException( txnNHeight )
+		    }
+		  }
+		}
+	      }
+	    )
+	  }
+	  else {
+	    throw new InvalidBlockException( txnNHeight )
+	  }
+	}
         case _ => {
           throw new Exception( "tbd" )
         }
