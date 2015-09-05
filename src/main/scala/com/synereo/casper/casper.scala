@@ -37,6 +37,7 @@ trait BlockT[Address,Data,Hash,Signature] extends ConsensusDataT[Address,Data,Ha
   def timeStamp : Date
   def ghostEntries : Seq[EntryT[Address,Data,Hash,Signature]]
   def feeDistribution : Option[FeeDistributionT[Address,Data,Hash,Signature]]
+  def pruning : Option[PruneGhostTableT[Address,Data,Hash,Signature]]
   def reorgEntries : ReorgT[Address,Data,Hash,Signature]
   def txns : Seq[TxnT[Address,Data,Hash,Signature]]
   def signature : Signature
@@ -61,6 +62,7 @@ case class Block[Address,Data,Hash,Signature](
   override val timeStamp : Date,
   override val ghostEntries : Seq[EntryT[Address,Data,Hash,Signature]],
   override val feeDistribution : Option[FeeDistributionT[Address,Data,Hash,Signature]],
+  override val pruning : Option[PruneGhostTableT[Address,Data,Hash,Signature]],
   override val reorgEntries : ReorgT[Address,Data,Hash,Signature],
   override val txns : Seq[TxnT[Address,Data,Hash,Signature]],
   override val signature : Signature
@@ -114,12 +116,21 @@ case class Txn[Address,Data,Hash,Signature](
 
 trait FeeDistributionT[Address,Data,Hash,Signature]
      extends EntryT[Address,Data,Hash,Signature] {
+}
+
+trait PruneGhostTableT[Address,Data,Hash,Signature]
+     extends EntryT[Address,Data,Hash,Signature] {
 } 
 
 case class FeeDistribution[Address,Data,Hash,Signature](
   override val prev : Hash,
   override val post : Hash
 ) extends FeeDistributionT[Address,Data,Hash,Signature]
+
+case class PruneGhostTable[Address,Data,Hash,Signature](
+  override val prev : Hash,
+  override val post : Hash
+) extends PruneGhostTableT[Address,Data,Hash,Signature]
 
 trait GhostTableT[Address,Data,Hash,Signature]
 extends MapProxy[Int,Map[BlockT[Address,Data,Hash,Signature],Seq[Bet[Address,Hash]]]]
