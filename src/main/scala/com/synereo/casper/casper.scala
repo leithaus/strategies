@@ -73,24 +73,28 @@ trait EntryT[Address,Data,Hash,Signature] {
   def post : Hash
 }
 
-case class TxnPayLoad[Address,Data,Signature](
-  receiver : Address,
-  data : Data,
-  signature : Signature
-)
-
 trait PaidServiceT {
   def fee : Int
 }
+
+case class TxnPayLoad[Address,Data,Signature](
+  sender : Address,
+  receiver : Address,
+  data : Data,
+  override val fee : Int,
+  signature : Signature  
+) extends PaidServiceT
+
 trait GhostT[Address,Data,Hash,Signature] extends EntryT[Address,Data,Hash,Signature]
 trait ReorgT[Address,Data,Hash,Signature]
-     extends EntryT[Address,Data,Hash,Signature] with PaidServiceT {
+     extends EntryT[Address,Data,Hash,Signature] {
   def txns : Seq[TxnT[Address,Data,Hash,Signature]]
 }
 trait TxnT[Address,Data,Hash,Signature]
      extends EntryT[Address,Data,Hash,Signature] with PaidServiceT {
        def payload : TxnPayLoad[Address,Data,Signature]
-       def sender : Address
+       def sender : Address = payload.sender
+       override def fee : Int = payload.fee
 }
 
 case class Ghost[Address,Data,Hash,Signature](
@@ -102,7 +106,6 @@ case class Ghost[Address,Data,Hash,Signature](
 case class Reorg[Address,Data,Hash,Signature](
   override val prev : Hash,
   override val txns : Seq[TxnT[Address,Data,Hash,Signature]],
-  override val fee : Int,
   override val post : Hash
 ) extends ReorgT[Address,Data,Hash,Signature]
 
@@ -113,6 +116,42 @@ case class Txn[Address,Data,Hash,Signature](
   override val fee : Int,
   override val post : Hash
 ) extends TxnT[Address,Data,Hash,Signature] 
+
+trait BondPayLoadT[Address,Signature]
+ extends PaidServiceT {
+   def validator : Address
+   def bonder : Address
+   def bond : Int
+   def bondPeriod : Int
+   def signature : Signature  
+ }
+
+case class BondPayLoad[Address,Signature](
+  override val validator : Address,
+  override val bonder : Address,
+  override val bond : Int,
+  override val bondPeriod : Int,
+  override val fee : Int,
+  override val signature : Signature  
+) extends BondPayLoadT[Address,Signature] 
+
+trait BondStatusT[Address,Data,Hash,Signature]
+trait BondT[Address,Data,Hash,Signature]
+     extends EntryT[Address,Data,Hash,Signature]
+     with BondStatusT[Address,Data,Hash,Signature] {
+       def bondPayLoad : BondPayLoadT[Address,Signature]
+}  
+
+case class Bond[Address,Data,Hash,Signature](
+  override val prev : Hash,
+  override val bondPayLoad : BondPayLoadT[Address,Signature],
+  override val post : Hash
+) extends BondT[Address,Data,Hash,Signature]
+
+case class Unbond[Address,Data,Hash,Signature](
+  override val prev : Hash,
+  override val post : Hash
+) extends EntryT[Address,Data,Hash,Signature] with BondStatusT[Address,Data,Hash,Signature]
 
 trait FeeDistributionT[Address,Data,Hash,Signature]
      extends EntryT[Address,Data,Hash,Signature] {
