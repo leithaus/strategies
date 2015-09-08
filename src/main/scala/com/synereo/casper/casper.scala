@@ -120,11 +120,17 @@ case class Txn[Address,Data,Hash,Signature](
 trait BondPayLoadT[Address,Signature]
  extends PaidServiceT {
    def validator : Address
-   def bonder : Address
-   def bond : Int
-   def bondPeriod : Int
-   def signature : Signature  
+   def bonder : Address 
+   def bond : Int 
+   def bondPeriod : Int 
+   def signature : Signature
  }
+
+trait UnbondPayLoadT[Address,Signature] {
+  def validator : Address
+  def bondPeriod : Int 
+  def signature : Signature
+}
 
 case class BondPayLoad[Address,Signature](
   override val validator : Address,
@@ -135,11 +141,22 @@ case class BondPayLoad[Address,Signature](
   override val signature : Signature  
 ) extends BondPayLoadT[Address,Signature] 
 
+case class UnbondPayLoad[Address,Signature](
+  override val validator : Address,
+  override val bondPeriod : Int,
+  override val signature : Signature
+) extends UnbondPayLoadT[Address,Signature] 
+
 trait BondStatusT[Address,Data,Hash,Signature]
 trait BondT[Address,Data,Hash,Signature]
      extends EntryT[Address,Data,Hash,Signature]
      with BondStatusT[Address,Data,Hash,Signature] {
        def bondPayLoad : BondPayLoadT[Address,Signature]
+}  
+trait UnbondT[Address,Data,Hash,Signature]
+     extends EntryT[Address,Data,Hash,Signature]
+     with BondStatusT[Address,Data,Hash,Signature] {
+       def unbondPayLoad : UnbondPayLoadT[Address,Signature]
 }  
 
 case class Bond[Address,Data,Hash,Signature](
@@ -150,8 +167,9 @@ case class Bond[Address,Data,Hash,Signature](
 
 case class Unbond[Address,Data,Hash,Signature](
   override val prev : Hash,
+  override val unbondPayLoad : UnbondPayLoadT[Address,Signature],
   override val post : Hash
-) extends EntryT[Address,Data,Hash,Signature] with BondStatusT[Address,Data,Hash,Signature]
+) extends UnbondT[Address,Data,Hash,Signature] 
 
 trait FeeDistributionT[Address,Data,Hash,Signature]
      extends EntryT[Address,Data,Hash,Signature] {
