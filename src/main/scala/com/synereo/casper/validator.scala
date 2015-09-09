@@ -12,6 +12,7 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.Map
 
 import java.util.Date
+import java.util.concurrent.TimeUnit
 
 trait StateFnT[State,Address,Data,Hash,Signature] 
 extends Function2[State,( EntryT[Address,Data,Hash,Signature], Int ),State]
@@ -150,6 +151,34 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
   def roundPayment(
     feeAsDouble : Double
   ) : Int
+  def timeOut(
+    cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature],
+    validator : Address,
+    costOfCensoring : Int,
+    revenueForCensoring : Int,
+    discountRate : Int
+  ) : Boolean = {
+    val a =
+      scala.math.log(
+	costOfCensoring / ( costOfCensoring + revenueForCensoring )
+      )
+    val b = scala.math.log( discountRate )
+    val timeOutInterval = scala.math.ceil( ( a / b ) - 1 )
+    cmgtState.lastSeen.get( validator ) match {
+      case Some( timeLastSeen ) => {
+	val currentTime = new Date()
+	val inactivity =
+	  TimeUnit.HOURS.convert(
+	    currentTime.getTime - timeLastSeen.getTime,
+	    TimeUnit.MILLISECONDS
+	  )
+	inactivity > timeOutInterval
+      }
+      case None => {
+	throw new InvalidBlockException( validator )
+      }
+    }    
+  }
   def paymentToValidator(
     cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature],
     validator : Address,
