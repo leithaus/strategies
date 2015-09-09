@@ -127,7 +127,39 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
       )
     ( ( committedBonds / totalBonds ) >= cmgtState.finalityThreshold )
   }
-  def timeFromGhostTable( cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature] ) : Date
+  def timeFromGhostTable(
+    cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature]
+  ) : Date
+  def deviationFromOrder(
+    cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature]
+  ) : Double
+  def percentageOfBond(
+    cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature],
+    validator : Address
+  ) : Double
+  def delayPenalty(
+    cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature],
+    validator : Address
+  ) : Double
+  def betConvergence(
+    cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature]
+  ) : Double  
+  def roundPayment(
+    feeAsDouble : Double
+  ) : Int
+  def paymentToValidator(
+    cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature],
+    validator : Address,
+    feePool : Int
+  ) : Int = {
+    roundPayment(      
+      deviationFromOrder( cmgtState )
+      * percentageOfBond( cmgtState, validator )
+      * delayPenalty( cmgtState, validator )
+      * betConvergence( cmgtState )
+      * feePool.toDouble
+    )
+  }
   def payValidators(
     cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature],
     revenue : Int 
