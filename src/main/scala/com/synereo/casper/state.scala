@@ -10,6 +10,8 @@ package com.synereo.casper
 
 import scala.collection.mutable.MapProxy
 
+import java.util.Date
+
 trait AppStateMapT[Address,Data,Hash,Signature,AppState]
  extends MapProxy[Hash,AppState] 
 trait ConsensusManagerStateMapT[PrimHash,Address,Data,Hash,Signature]
@@ -22,6 +24,7 @@ trait ConsensusManagerStateT[Address,Data,Hash,Signature] {
   def ghostDepth : Int  
   def history : GhostTableT[Address,Data,Hash,Signature] => Seq[TxnT[Address,Data,Hash,Signature]]  
   def bondedValidators : Map[Address,Int]
+  def lastSeen : Map[Address,Date]
   def minimumBond : Int
   def finalityThreshold : Double
   def evidenceChecker : Seq[ConsensusDataT[Address,Data,Hash,Signature]] => Option[Address]
@@ -37,6 +40,7 @@ class ConsensusManagerState[Address,Data,Hash,Signature](
   override val ghostDepth : Int,
   override val history : GhostTableT[Address,Data,Hash,Signature] => Seq[TxnT[Address,Data,Hash,Signature]],
   override val bondedValidators : Map[Address,Int],
+  override val lastSeen : Map[Address,Date],
   override val minimumBond : Int,
   override val finalityThreshold : Double,
   override val evidenceChecker : Seq[ConsensusDataT[Address,Data,Hash,Signature]] => Option[Address],
@@ -53,6 +57,7 @@ object ConsensusManagerState {
     ghostDepth : Int,
     history : GhostTableT[Address,Data,Hash,Signature] => Seq[TxnT[Address,Data,Hash,Signature]],
     bondedValidators : Map[Address,Int],
+    lastSeen : Map[Address,Date],
     minimumBond : Int,
     finalityThreshold : Double,
     evidenceChecker : Seq[ConsensusDataT[Address,Data,Hash,Signature]] => Option[Address],
@@ -67,6 +72,7 @@ object ConsensusManagerState {
       ghostDepth,
       history,
       bondedValidators,
+      lastSeen,
       minimumBond,
       finalityThreshold,
       evidenceChecker,
@@ -86,6 +92,7 @@ object ConsensusManagerState {
       oldState.ghostDepth,
       oldState.history,
       oldState.bondedValidators,
+      oldState.lastSeen,
       oldState.minimumBond,
       oldState.finalityThreshold,
       oldState.evidenceChecker,
@@ -105,6 +112,7 @@ object ConsensusManagerState {
       oldState.ghostDepth,
       history,
       oldState.bondedValidators,
+      oldState.lastSeen,
       oldState.minimumBond,
       oldState.finalityThreshold,
       oldState.evidenceChecker,
@@ -124,6 +132,7 @@ object ConsensusManagerState {
       oldState.ghostDepth,
       oldState.history,
       bondedValidators,
+      oldState.lastSeen,
       oldState.minimumBond,
       oldState.finalityThreshold,
       oldState.evidenceChecker,
@@ -143,6 +152,7 @@ object ConsensusManagerState {
       oldState.ghostDepth,
       oldState.history,
       oldState.bondedValidators,
+      oldState.lastSeen,
       oldState.minimumBond,
       oldState.finalityThreshold,
       oldState.evidenceChecker,
@@ -162,6 +172,7 @@ object ConsensusManagerState {
       oldState.ghostDepth,
       oldState.history,
       oldState.bondedValidators,
+      oldState.lastSeen,
       oldState.minimumBond,
       oldState.finalityThreshold,
       oldState.evidenceChecker,
@@ -179,6 +190,7 @@ object ConsensusManagerState {
     Int,
     GhostTableT[Address,Data,Hash,Signature] => Seq[TxnT[Address,Data,Hash,Signature]],
     Map[Address,Int],
+    Map[Address,Date],
     Int,
     Double,
     Seq[ConsensusDataT[Address,Data,Hash,Signature]] => Option[Address],
@@ -195,6 +207,7 @@ object ConsensusManagerState {
 	cmgtState.ghostDepth,
 	cmgtState.history,
 	cmgtState.bondedValidators,
+	cmgtState.lastSeen,
 	cmgtState.minimumBond,
 	cmgtState.finalityThreshold,
 	cmgtState.evidenceChecker,

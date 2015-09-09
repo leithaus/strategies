@@ -130,6 +130,9 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
   def timeFromGhostTable(
     cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature]
   ) : Date
+  def bondingPeriod(
+    cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature]
+  ) : Int
   def deviationFromOrder(
     cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature]
   ) : Double
@@ -202,6 +205,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 	  newAcc.ghostDepth,
 	  newAcc.history,
 	  newAcc.bondedValidators,
+	  newAcc.lastSeen,
 	  newAcc.minimumBond,
 	  newAcc.finalityThreshold,
 	  newAcc.evidenceChecker,
@@ -230,6 +234,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 	  s.ghostDepth,		
           s.history,
           s.bondedValidators,
+	  s.lastSeen,
 	  s.minimumBond,
 	  s.finalityThreshold,
           s.evidenceChecker,
@@ -271,6 +276,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		    state.ghostDepth,
                     state.history,
                     state.bondedValidators,
+		    state.lastSeen,
 		    state.minimumBond,
 		    state.finalityThreshold,
                     state.evidenceChecker,
@@ -296,6 +302,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		      state.ghostDepth,
                       state.history,
                       state.bondedValidators,
+		      state.lastSeen,
 		      state.minimumBond,
 		      state.finalityThreshold,
                       state.evidenceChecker,
@@ -323,6 +330,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		    state.ghostDepth,
                     state.history,
                     ( state.bondedValidators - addr ),
+		    state.lastSeen,
 		    state.minimumBond,
 		    state.finalityThreshold,
                     state.evidenceChecker,
@@ -391,6 +399,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		state.ghostDepth,		
                 state.history,
                 state.bondedValidators,
+		state.lastSeen,
 		state.minimumBond,
 		state.finalityThreshold,
                 state.evidenceChecker,
