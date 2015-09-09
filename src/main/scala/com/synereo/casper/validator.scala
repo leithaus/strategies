@@ -11,6 +11,8 @@ package com.synereo.casper
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.Map
 
+import java.util.Date
+
 trait StateFnT[State,Address,Data,Hash,Signature] 
 extends Function2[State,( EntryT[Address,Data,Hash,Signature], Int ),State]
 
@@ -125,6 +127,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
       )
     ( ( committedBonds / totalBonds ) >= cmgtState.finalityThreshold )
   }
+  def timeFromGhostTable( cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature] ) : Date
   def payValidators(
     cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature],
     revenue : Int 
@@ -173,7 +176,8 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 	  newAcc.blockHashMap,	    
 	  newBal,
 	  newRev,
-	  currHeight
+	  currHeight,
+	  newAcc.minStoredHeight
 	)
       }
 
@@ -200,7 +204,8 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 	  newBlkHMap,
 	  s.balances,
 	  ( s.revenues - lsh ),
-	  lsh + 1
+	  lsh + 1,
+	  s.minStoredHeight
 	)
       }
 
@@ -240,7 +245,8 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		    state.blockHashMap,
 		    state.balances,
 		    state.revenues,
-		    state.lastStoredHeight
+		    state.lastStoredHeight,
+		    state.minStoredHeight
                   )
                 }
                 case ( None, true ) => {
@@ -264,7 +270,8 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		      state.blockHashMap,
 		      state.balances,
 		      state.revenues,
-		      state.lastStoredHeight
+		      state.lastStoredHeight,
+		      state.minStoredHeight
                     )
                   }  
                   else {
@@ -290,7 +297,8 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		    state.blockHashMap,
 		    state.balances,
 		    state.revenues,
-		    state.lastStoredHeight
+		    state.lastStoredHeight,
+		    state.minStoredHeight
                   )
                 }
                 case None => {
@@ -357,7 +365,8 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		state.blockHashMap,
 		state.balances,
 		state.revenues,
-		state.lastStoredHeight
+		state.lastStoredHeight,
+		state.minStoredHeight
               )
             }
             case _ => {
