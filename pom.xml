@@ -15,7 +15,8 @@
     <cx.port>8180</cx.port>
     <cx.router>com.biosimilarity.mdp4tw.Main</cx.router>
     <scala.prefix>2.10</scala.prefix>
-    <scala.version>2.10.2</scala.version>
+    <!-- scala.version>2.10.2</scala.version -->
+    <scala.version>2.10.3</scala.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>${project.build.sourceEncoding}</project.reporting.outputEncoding>
   </properties>

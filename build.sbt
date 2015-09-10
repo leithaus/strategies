@@ -6,7 +6,8 @@ name := "strategies"
 
 version       := "0.1"
 
-scalaVersion  := "2.10.2"
+//scalaVersion  := "2.10.2"
+scalaVersion  := "2.10.3"
 
 autoCompilerPlugins := true
 
@@ -27,8 +28,10 @@ resolvers ++= Seq(
 publishTo := Some(Resolver.file("file",  new File(Path.userHome.absolutePath+"/.m2/repository")))
 
 libraryDependencies ++= Seq(
-  "org.scala-lang"         %   "scala-actors"       % "2.10.2",
-  "org.scala-lang"         %   "scala-reflect"      % "2.10.2",
+  //"org.scala-lang"         %   "scala-actors"       % "2.10.2",
+  "org.scala-lang"         %   "scala-actors"       % "2.10.3",
+  //"org.scala-lang"         %   "scala-reflect"      % "2.10.2",
+  "org.scala-lang"         %   "scala-reflect"      % "2.10.3",
   "javax.persistence" % "persistence-api" % "1.0" % "provided",
   "javax.servlet" % "servlet-api" % "2.5" % "provided",
   "org.coconut.forkjoin" % "jsr166y" % "070108",
