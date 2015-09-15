@@ -234,6 +234,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 	  newAcc.ghostDepth,
 	  newAcc.history,
 	  newAcc.bondedValidators,
+	  newAcc.bondRoundToInterval,
 	  newAcc.lastSeen,
 	  newAcc.minimumBond,
 	  newAcc.finalityThreshold,
@@ -263,6 +264,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 	  s.ghostDepth,		
           s.history,
           s.bondedValidators,
+	  s.bondRoundToInterval,
 	  s.lastSeen,
 	  s.minimumBond,
 	  s.finalityThreshold,
@@ -291,7 +293,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
       txn match {
         case Ghost( _, cd, _ ) => {
           cd match {
-            case blk@Block( h, _, _, _, _, _, _, _ ) => {
+            case blk@Block( h, _, _, _, _, _, _, _, _ ) => {
               //throw new Exception( "tbd" )
               ( blockValidityRecord.get( hash( blk ) ), ( h < height ) ) match {
                 case ( Some( true ), true ) => {
@@ -305,6 +307,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		    state.ghostDepth,
                     state.history,
                     state.bondedValidators,
+		    state.bondRoundToInterval,
 		    state.lastSeen,
 		    state.minimumBond,
 		    state.finalityThreshold,
@@ -331,6 +334,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		      state.ghostDepth,
                       state.history,
                       state.bondedValidators,
+		      state.bondRoundToInterval,
 		      state.lastSeen,
 		      state.minimumBond,
 		      state.finalityThreshold,
@@ -359,6 +363,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		    state.ghostDepth,
                     state.history,
                     ( state.bondedValidators - addr ),
+		    state.bondRoundToInterval,
 		    state.lastSeen,
 		    state.minimumBond,
 		    state.finalityThreshold,
@@ -428,6 +433,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		state.ghostDepth,		
                 state.history,
                 state.bondedValidators,
+		state.bondRoundToInterval,
 		state.lastSeen,
 		state.minimumBond,
 		state.finalityThreshold,

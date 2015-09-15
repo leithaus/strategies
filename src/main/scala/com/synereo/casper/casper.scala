@@ -38,6 +38,7 @@ trait BlockT[Address,Data,Hash,Signature] extends ConsensusDataT[Address,Data,Ha
   def ghostEntries : Seq[EntryT[Address,Data,Hash,Signature]]
   def feeDistribution : Option[FeeDistributionT[Address,Data,Hash,Signature]]
   def pruning : Option[PruneGhostTableT[Address,Data,Hash,Signature]]
+  def bondUnbond : Seq[BondStatusT[Address,Data,Hash,Signature] with EntryT[Address,Data,Hash,Signature]]
   def reorgEntries : ReorgT[Address,Data,Hash,Signature]
   def txns : Seq[TxnT[Address,Data,Hash,Signature]]
   def signature : Signature
@@ -63,6 +64,7 @@ case class Block[Address,Data,Hash,Signature](
   override val ghostEntries : Seq[EntryT[Address,Data,Hash,Signature]],
   override val feeDistribution : Option[FeeDistributionT[Address,Data,Hash,Signature]],
   override val pruning : Option[PruneGhostTableT[Address,Data,Hash,Signature]],
+  override val bondUnbond : Seq[BondStatusT[Address,Data,Hash,Signature] with EntryT[Address,Data,Hash,Signature]],
   override val reorgEntries : ReorgT[Address,Data,Hash,Signature],
   override val txns : Seq[TxnT[Address,Data,Hash,Signature]],
   override val signature : Signature
