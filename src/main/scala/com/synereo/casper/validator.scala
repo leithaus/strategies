@@ -131,6 +131,18 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
   def timeFromGhostTable(
     cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature]
   ) : Date
+  def selectionPeriod(
+    cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature],
+    date : Date
+  ) : Boolean
+  def selectionPeriod(
+    cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature]    
+  ) : Boolean = {
+    selectionPeriod( cmgtState, timeFromGhostTable( cmgtState ) )
+  }
+  def bondRound(
+    cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature]    
+  ) : Int
   def bondingPeriod(
     cmgtState : ConsensusManagerStateT[Address,Data,Hash,Signature]
   ) : Int
@@ -234,6 +246,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 	  newAcc.ghostDepth,
 	  newAcc.history,
 	  newAcc.bondedValidators,
+	  newAcc.nextBondedValidators,
 	  newAcc.bondRoundToInterval,
 	  newAcc.lastSeen,
 	  newAcc.minimumBond,
@@ -264,6 +277,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 	  s.ghostDepth,		
           s.history,
           s.bondedValidators,
+	  s.nextBondedValidators,
 	  s.bondRoundToInterval,
 	  s.lastSeen,
 	  s.minimumBond,
@@ -307,6 +321,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		    state.ghostDepth,
                     state.history,
                     state.bondedValidators,
+		    state.nextBondedValidators,
 		    state.bondRoundToInterval,
 		    state.lastSeen,
 		    state.minimumBond,
@@ -334,6 +349,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		      state.ghostDepth,
                       state.history,
                       state.bondedValidators,
+		      state.nextBondedValidators,
 		      state.bondRoundToInterval,
 		      state.lastSeen,
 		      state.minimumBond,
@@ -363,6 +379,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		    state.ghostDepth,
                     state.history,
                     ( state.bondedValidators - addr ),
+		    state.nextBondedValidators,
 		    state.bondRoundToInterval,
 		    state.lastSeen,
 		    state.minimumBond,
@@ -433,6 +450,7 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
 		state.ghostDepth,		
                 state.history,
                 state.bondedValidators,
+		state.nextBondedValidators,
 		state.bondRoundToInterval,
 		state.lastSeen,
 		state.minimumBond,
@@ -450,11 +468,138 @@ trait ValidatorT[Address,Data,PrimHash,Hash <: Tuple2[PrimHash,PrimHash],Signatu
             }
           }
         }
-	case Bond( _, _, _ ) => {
-	  throw new Exception( "tbd" )
+	case bnd@Bond( _, payload, _ ) => {
+	  if ( selectionPeriod( state ) ) {
+	    val bond = payload.bond	    
+	    if (
+	      ( bond >= state.minimumBond )
+	      && ( payload.bondPeriod == bondRound( state ) + 1 )
+	    ) {
+	      state.balances.get( payload.bonder ) match {
+		case Some( balance ) => {
+		  if ( bond <= balance ) {
+		    val newBalances =
+		      state.balances + ( payload.bonder -> ( balance - bond ) )
+		    val newNextBondedValidators =
+		      state.nextBondedValidators + ( payload.validator -> ( bond, 0 ) )
+
+		    ConsensusManagerState(
+		      state.ghostTable,
+		      state.ghostDepth,
+		      state.history,
+		      state.bondedValidators,
+		      newNextBondedValidators,
+		      state.bondRoundToInterval,
+		      state.lastSeen,
+		      state.minimumBond,
+		      state.finalityThreshold,
+		      state.evidenceChecker,
+		      state.blockHashMap,
+		      newBalances,
+		      state.revenues,
+		      state.lastStoredHeight,
+		      state.minStoredHeight
+		    )
+		  }
+		  else {
+		    throw new InvalidBlockException( bnd )
+		  }
+		}
+		case None => {
+		  throw new InvalidBlockException( bnd )
+		}
+	      }	      
+	    }
+	    else {
+	      throw new InvalidBlockException( bnd )
+	    }
+	  }
+	  else {
+	    throw new InvalidBlockException( bnd )
+	  }
 	}
-	case Unbond( _, _, _ ) => {
-	  throw new Exception( "tbd" )
+	case unbnd@Unbond( _, payload, _ ) => {
+	  if ( 
+	    selectionPeriod( state )
+	    && ( payload.bondPeriod == ( bondRound( state ) - 1 ) )
+	  ) {
+	    payload.bondWithdrawal match {
+	      case Some( withdrawal ) => {		
+		state.balances.get( payload.validator ) match {
+		  case Some( balance ) => {
+		    if ( withdrawal < balance ) {
+		      val newBalances = 
+			state.balances + ( payload.validator -> ( balance - withdrawal ) )
+		      val newNextBondedValidators =
+			( state.nextBondedValidators - payload.validator )
+
+		      ConsensusManagerState(
+			state.ghostTable,
+			state.ghostDepth,
+			state.history,
+			state.bondedValidators,
+			newNextBondedValidators,
+			state.bondRoundToInterval,
+			state.lastSeen,
+			state.minimumBond,
+			state.finalityThreshold,
+			state.evidenceChecker,
+			state.blockHashMap,
+			newBalances,
+			state.revenues,
+			state.lastStoredHeight,
+			state.minStoredHeight
+		      )
+		    }
+		    else {
+		      ConsensusManagerState(
+			state.ghostTable,
+			state.ghostDepth,
+			state.history,
+			state.bondedValidators,
+			( state.nextBondedValidators - payload.validator ),
+			state.bondRoundToInterval,
+			state.lastSeen,
+			state.minimumBond,
+			state.finalityThreshold,
+			state.evidenceChecker,
+			state.blockHashMap,
+			state.balances,
+			state.revenues,
+			state.lastStoredHeight,
+			state.minStoredHeight
+		      )
+		    }
+		  }
+		  case None => {
+		    throw new InvalidBlockException( unbnd )
+		  }
+		}
+	      }
+	      case None => {
+		ConsensusManagerState(
+		  state.ghostTable,
+		  state.ghostDepth,
+		  state.history,
+		  state.bondedValidators,
+		  ( state.nextBondedValidators - payload.validator ),
+		  state.bondRoundToInterval,
+		  state.lastSeen,
+		  state.minimumBond,
+		  state.finalityThreshold,
+		  state.evidenceChecker,
+		  state.blockHashMap,
+		  state.balances,
+		  state.revenues,
+		  state.lastStoredHeight,
+		  state.minStoredHeight
+		)
+	      }
+	    }	    
+	  }
+	  else {
+	    throw new InvalidBlockException( unbnd )
+	  }
 	}
 	case FeeDistribution( prev, post ) => {
 	  val ( cmgtHash, _ ) = prev

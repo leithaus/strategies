@@ -24,6 +24,7 @@ trait ConsensusManagerStateT[Address,Data,Hash,Signature] {
   def ghostDepth : Int  
   def history : GhostTableT[Address,Data,Hash,Signature] => Seq[TxnT[Address,Data,Hash,Signature]]  
   def bondedValidators : Map[Address,( Int, Int )]
+  def nextBondedValidators : Map[Address,( Int, Int )]
   def bondRoundToInterval : Map[Int,(Date,Option[Date])]
   def lastSeen : Map[Address,Date]
   def minimumBond : Int
@@ -41,7 +42,11 @@ class ConsensusManagerState[Address,Data,Hash,Signature](
   override val ghostDepth : Int,
   override val history : GhostTableT[Address,Data,Hash,Signature] => Seq[TxnT[Address,Data,Hash,Signature]],
   override val bondedValidators : Map[Address, ( Int, Int )],
-  override val bondRoundToInterval : Map[Int,(Date,Option[Date])],
+  // BUGBUG -- LGM : since we only ever keep one interval we could
+  // (and should?) break up the map into 1 Int for the round number,
+  // and one (Date, Option[Date])
+  override val nextBondedValidators : Map[Address, ( Int, Int )],
+  override val bondRoundToInterval : Map[Int,(Date,Option[Date])],  
   override val lastSeen : Map[Address,Date],
   override val minimumBond : Int,
   override val finalityThreshold : Double,
@@ -59,6 +64,7 @@ object ConsensusManagerState {
     ghostDepth : Int,
     history : GhostTableT[Address,Data,Hash,Signature] => Seq[TxnT[Address,Data,Hash,Signature]],
     bondedValidators : Map[Address,( Int, Int )],
+    nextBondedValidators : Map[Address,( Int, Int )],
     bondRoundToInterval : Map[Int,( Date, Option[Date] )],
     lastSeen : Map[Address,Date],
     minimumBond : Int,
@@ -75,6 +81,7 @@ object ConsensusManagerState {
       ghostDepth,
       history,
       bondedValidators,
+      nextBondedValidators,
       bondRoundToInterval,
       lastSeen,
       minimumBond,
@@ -96,6 +103,7 @@ object ConsensusManagerState {
       oldState.ghostDepth,
       oldState.history,
       oldState.bondedValidators,
+      oldState.nextBondedValidators,
       oldState.bondRoundToInterval,
       oldState.lastSeen,
       oldState.minimumBond,
@@ -117,6 +125,7 @@ object ConsensusManagerState {
       oldState.ghostDepth,
       history,
       oldState.bondedValidators,
+      oldState.nextBondedValidators,
       oldState.bondRoundToInterval,
       oldState.lastSeen,
       oldState.minimumBond,
@@ -138,6 +147,7 @@ object ConsensusManagerState {
       oldState.ghostDepth,
       oldState.history,
       bondedValidators,
+      oldState.nextBondedValidators,
       oldState.bondRoundToInterval,
       oldState.lastSeen,
       oldState.minimumBond,
@@ -159,6 +169,7 @@ object ConsensusManagerState {
       oldState.ghostDepth,
       oldState.history,
       oldState.bondedValidators,
+      oldState.nextBondedValidators,
       oldState.bondRoundToInterval,
       oldState.lastSeen,
       oldState.minimumBond,
@@ -180,6 +191,7 @@ object ConsensusManagerState {
       oldState.ghostDepth,
       oldState.history,
       oldState.bondedValidators,
+      oldState.nextBondedValidators,
       oldState.bondRoundToInterval,
       oldState.lastSeen,
       oldState.minimumBond,
@@ -199,6 +211,7 @@ object ConsensusManagerState {
     Int,
     GhostTableT[Address,Data,Hash,Signature] => Seq[TxnT[Address,Data,Hash,Signature]],
     Map[Address,( Int, Int )],
+    Map[Address,( Int, Int )],
     Map[Int,(Date,Option[Date])],
     Map[Address,Date],
     Int,
@@ -217,6 +230,7 @@ object ConsensusManagerState {
 	cmgtState.ghostDepth,
 	cmgtState.history,
 	cmgtState.bondedValidators,
+	cmgtState.nextBondedValidators,
 	cmgtState.bondRoundToInterval,
 	cmgtState.lastSeen,
 	cmgtState.minimumBond,

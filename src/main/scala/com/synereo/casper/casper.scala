@@ -131,6 +131,7 @@ trait BondPayLoadT[Address,Signature]
 trait UnbondPayLoadT[Address,Signature] {
   def validator : Address
   def bondPeriod : Int 
+  def bondWithdrawal : Option[Int] 
   def signature : Signature
 }
 
@@ -146,6 +147,7 @@ case class BondPayLoad[Address,Signature](
 case class UnbondPayLoad[Address,Signature](
   override val validator : Address,
   override val bondPeriod : Int,
+  override val bondWithdrawal : Option[Int],
   override val signature : Signature
 ) extends UnbondPayLoadT[Address,Signature] 
 
