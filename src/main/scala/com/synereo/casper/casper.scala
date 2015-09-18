@@ -44,18 +44,28 @@ trait BlockT[Address,Data,Hash,Signature] extends ConsensusDataT[Address,Data,Ha
   def signature : Signature
 }
 
-trait ValidationT[Address,Data,Hash,Signature] extends ConsensusDataT[Address,Data,Hash,Signature]
+trait ValidationT[Address,Data,Hash,Signature]
+     extends ConsensusDataT[Address,Data,Hash,Signature]
+{
+  def bets : List[Bet[Address,Hash]]
+  def signature : Signature
+}
 
 case class Validation[Address,Data,Hash,Signature](
-  bets : List[Bet[Address,Hash]],
-  signature : Signature
+  override val bets : List[Bet[Address,Hash]],
+  override val signature : Signature
 ) extends ValidationT[Address,Data,Hash,Signature]
  
-trait EvidenceT[Address,Data,Hash,Signature] extends ConsensusDataT[Address,Data,Hash,Signature]
+trait EvidenceT[Address,Data,Hash,Signature]
+     extends ConsensusDataT[Address,Data,Hash,Signature]
+{
+  def address : Address
+  def validations : List[ValidationT[Address,Data,Hash,Signature]]
+}
 
 case class Evidence[Address,Data,Hash,Signature](
-  address : Address,
-  validations : List[ValidationT[Address,Data,Hash,Signature]]
+  override val address : Address,
+  override val validations : List[ValidationT[Address,Data,Hash,Signature]]
 ) extends EvidenceT[Address,Data,Hash,Signature]
 
 case class Block[Address,Data,Hash,Signature](
